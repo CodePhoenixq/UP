@@ -4,20 +4,28 @@ import os
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDesktopWidget, QLineEdit, QGraphicsView, QGraphicsScene
 from PyQt5.QtCore import Qt, QUrl, QTimer, QRectF
-from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor, QLinearGradient, QBrush, QPainter, QPen
+from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor, QBrush, QPainter, QPen, QPixmap
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 
 
-class GlavnoeMenyu(QMainWindow):
+class Glav(QMainWindow):
     def __init__(self):
         super().__init__()
         self.imya_igroka = None
         self.indeks_skina = 0
-        self.monety = self.zagruzit_monety()
-        self.skiny = ["Скин 1", "Скин 2", "Скин 3"]
+        self.tekushiy_skin = 0
+        self.kuplennye_skiny = set()
+        self.skiny = [
+            {"name": "Пушистик", "price": 0, "path": "mat/pl/kap.png"},
+            {"name": "Глаз", "price": 50, "path": "mat/pl/eye.png"},
+            {"name": "Черный кот", "price": 100, "path": "mat/pl/cat.png"},
+            {"name": "Свинка", "price": 150, "path": "mat/pl/pig.png"},
+            {"name": "КаĉĉΞĪа", "price": 200, "path": "mat/pl/kass.png"}
+        ]
         self.fon_muzika = None
         self.zvuk_knopki = None
         self.rekordy = self.zagruzit_rekordy()
+        self.zagruzit_monety()
         self.init_interfeis()
 
     def init_interfeis(self):
@@ -122,7 +130,7 @@ class GlavnoeMenyu(QMainWindow):
             padding: 15px;
             border: 2px solid #ff69b4;
             border-radius: 15px;
-            background-color: rgba(255, 255, 255, 0.2);
+            background-color: rgba(200, 200, 200, 0.5);
             color: white;
         """)
         self.pole_imya.setMaxLength(15)
@@ -173,27 +181,41 @@ class GlavnoeMenyu(QMainWindow):
         knopka_nazad = self.sozdat_knopku("Вернуться", razmer_fonta=18, otstup=10)
         knopka_nazad.clicked.connect(self.pokazat_glavnoe_menyu)
 
-        label_monety = QLabel(f"Монеты: {self.monety}")
-        label_monety.setObjectName("label_monety")
-        label_monety.setFont(QFont(self.svoy_font, 18))
-        label_monety.setStyleSheet("color: yellow; font-weight: bold;")
+        self.label_monety = QLabel(f"Монеты: {self.monety}")
+        self.label_monety.setFont(QFont(self.svoy_font, 18))
+        self.label_monety.setStyleSheet("color: yellow; font-weight: bold;")
 
         verhniy_ryad.addWidget(knopka_nazad)
         verhniy_ryad.addStretch()
-        verhniy_ryad.addWidget(label_monety)
+        verhniy_ryad.addWidget(self.label_monety)
         layout.addLayout(verhniy_ryad)
 
-        self.otobrazhenie_skina = QLabel("СКИН")
-        self.otobrazhenie_skina.setAlignment(Qt.AlignCenter)
-        self.otobrazhenie_skina.setFont(QFont(self.svoy_font, 48, QFont.Bold))
-        self.otobrazhenie_skina.setStyleSheet("""
-            background-color: #dcdcdc;
-            border: 2px solid #888;
-            border-radius: 100px;
-            padding: 50px;
-            color: black;
-        """)
-        layout.addWidget(self.otobrazhenie_skina)
+        skin_container = QHBoxLayout()
+        skin_container.addStretch()
+        self.skin_view = QGraphicsView()
+        self.skin_scene = QGraphicsScene()
+        self.skin_view.setScene(self.skin_scene)
+        self.skin_view.setFixedSize(200, 200)
+        self.skin_view.setStyleSheet("background: transparent; border: none;")
+        skin_container.addWidget(self.skin_view)
+        skin_container.addStretch()
+        layout.addLayout(skin_container)
+
+        self.label_skin_name = QLabel("Облик:")
+        self.label_skin_name.setAlignment(Qt.AlignCenter)
+        self.label_skin_name.setFont(QFont(self.svoy_font, 20))
+        self.label_skin_name.setStyleSheet("color: white;")
+        layout.addWidget(self.label_skin_name)
+
+        self.label_skin_price = QLabel("Цена:")
+        self.label_skin_price.setAlignment(Qt.AlignCenter)
+        self.label_skin_price.setFont(QFont(self.svoy_font, 18))
+        self.label_skin_price.setStyleSheet("color: yellow;")
+        layout.addWidget(self.label_skin_price)
+
+        self.knopka_kupit = self.sozdat_knopku("Применить")
+        self.knopka_kupit.clicked.connect(self.kupit_tekushiy_skin)
+        layout.addWidget(self.knopka_kupit)
 
         navigatsiya = QHBoxLayout()
         knopka_nazad_skin = self.sozdat_knopku("◀", razmer_fonta=32, otstup=10, shirina=80, visota=80)
@@ -208,7 +230,7 @@ class GlavnoeMenyu(QMainWindow):
         layout.addLayout(navigatsiya)
 
         podpisi = QHBoxLayout()
-        for tekst in ["Смена скина\nназад", "Смена скина\nвперед"]:
+        for tekst in ["Смена облика\nназад", "Смена облика\nвперед"]:
             podpis = QLabel(tekst)
             podpis.setAlignment(Qt.AlignCenter)
             podpis.setFont(QFont(self.svoy_font, 12))
@@ -257,14 +279,26 @@ class GlavnoeMenyu(QMainWindow):
             nadpis = QLabel("Нет рекордов")
             nadpis.setAlignment(Qt.AlignCenter)
             nadpis.setFont(QFont(self.svoy_font, 20))
-            nadpis.setStyleSheet("color: white;")
+            nadpis.setStyleSheet("""
+                color: white;
+                background-color: rgba(0, 0, 0, 150);
+                padding: 10px;
+                border-radius: 10px;
+                border: 1px solid #ff69b4;
+            """)
             self.layout_rekordov.addWidget(nadpis)
         else:
             for imya, ochki in self.rekordy:
                 nadpis = QLabel(f"{imya} — {ochki}")
                 nadpis.setAlignment(Qt.AlignCenter)
                 nadpis.setFont(QFont(self.svoy_font, 20))
-                nadpis.setStyleSheet("color: white; background-color: rgba(255, 105, 180, 0.2); padding: 10px; border-radius: 10px;")
+                nadpis.setStyleSheet("""
+                    color: white;
+                    background-color: rgba(0, 0, 0, 150);
+                    padding: 10px;
+                    border-radius: 10px;
+                    border: 1px solid #ff69b4;
+                """)
                 self.layout_rekordov.addWidget(nadpis)
 
     def sozdat_ekran_igry(self):
@@ -308,9 +342,6 @@ class GlavnoeMenyu(QMainWindow):
         self.widget_rekordy.setVisible(False)
         self.widget_igra.setVisible(False)
         self.obnovit_skiny()
-        label = self.widget_magazin.findChild(QLabel, "label_monety")
-        if label:
-            label.setText(f"Монеты: {self.monety}")
 
     def pokazat_rekordy(self):
         self.zvuk_knopki.play()
@@ -336,6 +367,9 @@ class GlavnoeMenyu(QMainWindow):
             self.tekst_scheta.setPos(w - rect.width() - 20, 20)
 
     def nachat_igru_vnutri(self):
+        if self.tekushiy_skin not in self.kuplennye_skiny:
+            self.tekushiy_skin = 0
+
         self.scena.clear()
         w, h = self.width(), self.height()
         self.vid.setFixedSize(w, h)
@@ -349,10 +383,16 @@ class GlavnoeMenyu(QMainWindow):
         self.OTSTUP_SVERHU = 60
         self.SCHET = 0
 
-        radius_ptitsy = 16
-        perо = QPen(QColor("white"), 3)
-        kist = QBrush(QColor("#ff69b4"))
-        self.ptitsa = self.scena.addEllipse(0, 0, radius_ptitsy * 2, radius_ptitsy * 2, pen=perо, brush=kist)
+        skin_data = self.skiny[self.tekushiy_skin]
+        pixmap = QPixmap(skin_data["path"])
+
+        if not pixmap.isNull():
+            self.ptitsa = self.scena.addPixmap(pixmap)
+        else:
+            pero = QPen(QColor("white"), 3)
+            kist = QBrush(QColor("#ff69b4"))
+            self.ptitsa = self.scena.addEllipse(0, 0, 32, 32, pen=pero, brush=kist)
+
         self.ptitsa.setPos(100, h // 2)
 
         self.skorost_ptitsy = 0
@@ -388,31 +428,48 @@ class GlavnoeMenyu(QMainWindow):
 
     def sozydat_trubu(self):
         h = self.scena.height()
-        if h <= self.OTSTUP_SVERHU + self.VYSOTA_PROREZI:
+        if h <= self.OTSTUP_SVERHU + 60:
             return
 
-        MIN_VYSOTA_PROREZI = 16 * 3
-
-        realnaya_vysota = max(self.VYSOTA_PROREZI, MIN_VYSOTA_PROREZI)
+        self.VYSOTA_PROREZI = random.randint(80, 200)
 
         min_vverhu = self.OTSTUP_SVERHU + 40
-        max_vverhu = int(h - realnaya_vysota - 20)
+        max_vverhu = int(h - self.VYSOTA_PROREZI - 20)
 
         if max_vverhu <= min_vverhu:
             vverhu = min_vverhu
         else:
             vverhu = random.randint(min_vverhu, max_vverhu)
 
-        vnizu = vverhu + realnaya_vysota
+        tube_pixmap = QPixmap("mat/i/tube.png")
 
-        tsvet_truby = QColor("#ff69b4")
-        pero_truby = QPen(tsvet_truby, 2)
-        kist_truby = QBrush(tsvet_truby)
+        vysota_verh = vverhu
+        if vysota_verh < 300:
+             vysota_verh = 500
 
-        truba_verh = self.scena.addRect(0, 0, self.SHIRINA_TRUBY, vverhu, pen=pero_truby, brush=kist_truby)
-        truba_niz = self.scena.addRect(0, vnizu, self.SHIRINA_TRUBY, h - vnizu, pen=pero_truby, brush=kist_truby)
+        truba_verh_pix = tube_pixmap.scaled(
+                int(self.SHIRINA_TRUBY),
+                int(vysota_verh),
+                Qt.IgnoreAspectRatio,
+                Qt.SmoothTransformation
+        )
+        truba_verh = self.scena.addPixmap(truba_verh_pix)
 
-        truba_verh.setPos(self.scena.width(), 0)
+        truba_verh.setPos(self.scena.width(), -30)
+
+        vnizu = vysota_verh + self.VYSOTA_PROREZI
+
+        vysota_niz = h - vnizu
+        if vysota_niz < 300:
+            vysota_niz = 500
+
+        truba_niz_pix = tube_pixmap.scaled(
+                int(self.SHIRINA_TRUBY),
+                int(vysota_niz),
+                Qt.IgnoreAspectRatio,
+                Qt.SmoothTransformation
+        )
+        truba_niz = self.scena.addPixmap(truba_niz_pix)
         truba_niz.setPos(self.scena.width(), vnizu)
 
         truba_verh.setData(0, False)
@@ -469,7 +526,6 @@ class GlavnoeMenyu(QMainWindow):
             if self.imya_igroka:
                 self.rekordy = self.zagruzit_rekordy()
                 novaya_zapis = (self.imya_igroka, self.SCHET)
-
                 est_li = any(imya == self.imya_igroka and ochki == self.SCHET for imya, ochki in self.rekordy)
 
                 if not est_li:
@@ -542,8 +598,31 @@ class GlavnoeMenyu(QMainWindow):
             self.pokazat_glavnoe_menyu()
 
     def obnovit_skiny(self):
-        nazvanie = self.skiny[self.indeks_skina]
-        self.otobrazhenie_skina.setText(nazvanie)
+        skin_data = self.skiny[self.indeks_skina]
+        name = skin_data["name"]
+        price = skin_data["price"]
+
+        self.label_skin_name.setText(f"Облик: {name}")
+        self.label_skin_price.setText(f"Цена: {price} монет")
+
+        pixmap = QPixmap(skin_data["path"])
+        if not pixmap.isNull():
+            self.skin_scene.clear()
+            item = self.skin_scene.addPixmap(pixmap)
+            self.skin_scene.setSceneRect(item.boundingRect())
+            self.skin_view.fitInView(item, Qt.KeepAspectRatio)
+
+        if self.indeks_skina in self.kuplennye_skiny:
+            self.knopka_kupit.setText("Применить")
+            self.knopka_kupit.setEnabled(True)
+        else:
+            if price == 0:
+                self.knopka_kupit.setText("Бесплатно")
+            else:
+                self.knopka_kupit.setText(f"Купить ({price})")
+            self.knopka_kupit.setEnabled(self.monety >= price)
+
+        self.label_monety.setText(f"Монеты: {self.monety}")
 
     def predydushiy_skin(self):
         self.zvuk_knopki.play()
@@ -555,16 +634,61 @@ class GlavnoeMenyu(QMainWindow):
         self.indeks_skina = (self.indeks_skina + 1) % len(self.skiny)
         self.obnovit_skiny()
 
+    def kupit_tekushiy_skin(self):
+        skin_index = self.indeks_skina
+        skin_data = self.skiny[skin_index]
+
+        if skin_index in self.kuplennye_skiny:
+            self.tekushiy_skin = skin_index
+            self.zvuk_knopki.play()
+            return
+
+        if skin_data["price"] == 0:
+            self.kuplennye_skiny.add(skin_index)
+            self.tekushiy_skin = skin_index
+            self.zvuk_knopki.play()
+            self.obnovit_skiny()
+            self.sohranit_monety()
+            return
+
+        if self.monety >= skin_data["price"]:
+            self.monety -= skin_data["price"]
+            self.kuplennye_skiny.add(skin_index)
+            self.tekushiy_skin = skin_index
+            self.zvuk_knopki.play()
+            self.sohranit_monety()
+            self.obnovit_skiny()
+
     def vyiti(self):
         self.zvuk_knopki.play()
         QApplication.quit()
 
     def ustanovit_fon(self):
+        fon = QPixmap("mat/i/fon.jpg")
+        if fon.isNull():
+            fon = QPixmap(self.size())
+            fon.fill(Qt.black)
+
+        fon = fon.scaled(self.size(), Qt.KeepAspectRatioByExpanding, Qt.SmoothTransformation)
+
+        kombinirovannoe = QPixmap(self.size())
+        kombinirovannoe.fill(Qt.transparent)
+
+        painter = QPainter(kombinirovannoe)
+        painter.setRenderHint(QPainter.SmoothPixmapTransform)
+        x = (self.width() - fon.width()) // 2
+        y = (self.height() - fon.height()) // 2
+        painter.drawPixmap(x, y, fon)
+
+        scroll = QPixmap("mat/i/scroll.png")
+        if not scroll.isNull():
+            scroll_scaled = scroll.scaled(self.size(), Qt.IgnoreAspectRatio, Qt.SmoothTransformation)
+            painter.drawPixmap(0, 0, scroll_scaled)
+
+        painter.end()
+
         palitra = QPalette()
-        gradient = QLinearGradient(0, 0, 0, self.height())
-        gradient.setColorAt(0, QColor("#ffafcc"))
-        gradient.setColorAt(1, QColor("#bde0fe"))
-        palitra.setBrush(QPalette.Window, QBrush(gradient))
+        palitra.setBrush(QPalette.Window, QBrush(kombinirovannoe))
         self.setPalette(palitra)
 
     def resizeEvent(self, event):
@@ -605,18 +729,42 @@ class GlavnoeMenyu(QMainWindow):
         if os.path.exists("user.txt"):
             try:
                 with open("user.txt", "r") as f:
-                    return int(f.read().strip())
-            except ValueError:
-                return 0
-        return 0
+                    lines = f.readlines()
+                    self.monety = int(lines[0].strip()) if len(lines) > 0 else 0
+
+                    if len(lines) > 1 and lines[1].strip():
+                        kuplennye_str = lines[1].strip()
+                        self.kuplennye_skiny = set(map(int, kuplennye_str.split(',')))
+                    else:
+                        self.kuplennye_skiny = set()
+
+                    if len(lines) > 2 and lines[2].strip():
+                        tekushiy = int(lines[2].strip())
+                        if 0 <= tekushiy < len(self.skiny):
+                            self.tekushiy_skin = tekushiy
+                        else:
+                            self.tekushiy_skin = 0
+                    else:
+                        self.tekushiy_skin = 0
+
+                    return
+            except (ValueError, IndexError, OSError):
+                pass
+
+        self.monety = 0
+        self.kuplennye_skiny = set()
+        self.tekushiy_skin = 0
 
     def sohranit_monety(self):
         with open("user.txt", "w") as f:
-            f.write(str(self.monety))
+            f.write(str(self.monety) + "\n")
+            kuplennye_str = ",".join(map(str, sorted(self.kuplennye_skiny)))
+            f.write(kuplennye_str + "\n")
+            f.write(str(self.tekushiy_skin) + "\n")
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    okno = GlavnoeMenyu()
+    okno = Glav()
     okno.show()
     sys.exit(app.exec_())
