@@ -2,91 +2,91 @@ import sys
 import random
 import os
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDesktopWidget, QLineEdit, QGraphicsView, QGraphicsScene, QGraphicsTextItem
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDesktopWidget, QLineEdit, QGraphicsView, QGraphicsScene
 from PyQt5.QtCore import Qt, QUrl, QTimer, QRectF
 from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor, QLinearGradient, QBrush, QPainter, QPen
 from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 
 
-class MainMenu(QMainWindow):
+class GlavnoeMenyu(QMainWindow):
     def __init__(self):
         super().__init__()
-        self.player_name = None
-        self.current_skin_index = 0
-        self.coins = self.load_coins()
-        self.skins = ["Скин 1", "Скин 2", "Скин 3"]
-        self.bg_music = None
-        self.clck = None
-        self.leaderboard_records = self.load_leaderboard()
-        self.init_ui()
+        self.imya_igroka = None
+        self.indeks_skina = 0
+        self.monety = self.zagruzit_monety()
+        self.skiny = ["Скин 1", "Скин 2", "Скин 3"]
+        self.fon_muzika = None
+        self.zvuk_knopki = None
+        self.rekordy = self.zagruzit_rekordy()
+        self.init_interfeis()
 
-    def init_ui(self):
-        screen = QDesktopWidget().screenGeometry()
-        screen_width = screen.width()
-        screen_height = screen.height()
+    def init_interfeis(self):
+        ekran = QDesktopWidget().screenGeometry()
+        shirina_ekrana = ekran.width()
+        visota_ekrana = ekran.height()
 
-        window_width = int(screen_width * 0.6)
-        window_height = int(screen_height * 0.7)
-        self.setFixedSize(window_width, window_height)
+        shirina_okna = int(shirina_ekrana * 0.6)
+        visota_okna = int(visota_ekrana * 0.7)
+        self.setFixedSize(shirina_okna, visota_okna)
 
         self.move(
-            (screen_width - window_width) // 2,
-            (screen_height - window_height) // 2
+            (shirina_ekrana - shirina_okna) // 2,
+            (visota_ekrana - visota_okna) // 2
         )
         self.setWindowTitle("Flappy Bird")
 
-        font_path = "mat/f/Comfortaa.ttf"
-        font_id = QFontDatabase.addApplicationFont(font_path)
-        self.custom_font = QFontDatabase.applicationFontFamilies(font_id)[0]
+        put_k_fontu = "mat/f/Comfortaa.ttf"
+        id_fonta = QFontDatabase.addApplicationFont(put_k_fontu)
+        self.svoy_font = QFontDatabase.applicationFontFamilies(id_fonta)[0]
 
-        self.clck = QMediaPlayer()
-        self.clck.setMedia(QMediaContent(QUrl.fromLocalFile("mat/s/hump.mp3")))
-        self.clck.setVolume(50)
+        self.zvuk_knopki = QMediaPlayer()
+        self.zvuk_knopki.setMedia(QMediaContent(QUrl.fromLocalFile("mat/s/hump.mp3")))
+        self.zvuk_knopki.setVolume(50)
 
-        self.bg_music = QMediaPlayer()
-        self.bg_music.setMedia(QMediaContent(QUrl.fromLocalFile("mat/mus/muslo.mp3")))
-        self.bg_music.setVolume(20)
-        self.bg_music.mediaStatusChanged.connect(self.on_media_status_changed)
+        self.fon_muzika = QMediaPlayer()
+        self.fon_muzika.setMedia(QMediaContent(QUrl.fromLocalFile("mat/mus/muslo.mp3")))
+        self.fon_muzika.setVolume(20)
+        self.fon_muzika.mediaStatusChanged.connect(self.kogda_muzika_zakonchilas)
 
-        central_widget = QWidget()
-        self.setCentralWidget(central_widget)
+        osnovnoy_widget = QWidget()
+        self.setCentralWidget(osnovnoy_widget)
 
-        self.main_layout = QVBoxLayout()
-        self.main_layout.setAlignment(Qt.AlignCenter)
-        self.main_layout.setSpacing(30)
-        central_widget.setLayout(self.main_layout)
+        self.osnovnoy_layout = QVBoxLayout()
+        self.osnovnoy_layout.setAlignment(Qt.AlignCenter)
+        self.osnovnoy_layout.setSpacing(30)
+        osnovnoy_widget.setLayout(self.osnovnoy_layout)
 
-        self.create_name_screen()
-        self.create_main_menu()
-        self.create_shop_screen()
-        self.create_leaderboard_screen()
-        self.create_game_screen()
+        self.sozdat_ekran_imya()
+        self.sozdat_glavnoe_menyu()
+        self.sozdat_magazin()
+        self.sozdat_tablitsu_rekordov()
+        self.sozdat_ekran_igry()
 
-        self.main_layout.addWidget(self.name_widget)
-        self.main_layout.addWidget(self.main_menu_widget)
-        self.main_layout.addWidget(self.shop_widget)
-        self.main_layout.addWidget(self.leaderboard_widget)
-        self.main_layout.addWidget(self.game_widget)
+        self.osnovnoy_layout.addWidget(self.widget_imya)
+        self.osnovnoy_layout.addWidget(self.widget_menyu)
+        self.osnovnoy_layout.addWidget(self.widget_magazin)
+        self.osnovnoy_layout.addWidget(self.widget_rekordy)
+        self.osnovnoy_layout.addWidget(self.widget_igra)
 
-        self.show_name_screen()
-        self.set_back()
+        self.pokazat_ekran_imya()
+        self.ustanovit_fon()
 
-    def on_media_status_changed(self, status):
+    def kogda_muzika_zakonchilas(self, status):
         if status == QMediaPlayer.EndOfMedia:
-            self.bg_music.setPosition(0)
-            self.bg_music.play()
+            self.fon_muzika.setPosition(0)
+            self.fon_muzika.play()
 
-    def create_button(self, text, font_size=24, padding=15, width=None, height=None):
-        button = QPushButton(text)
-        style = f"""
+    def sozdat_knopku(self, tekst, razmer_fonta=24, otstup=15, shirina=None, visota=None):
+        knopka = QPushButton(tekst)
+        stil = f"""
             QPushButton {{
                 background-color: rgba(255, 105, 180, 0.3);
                 color: white;
                 border: 2px solid #ff69b4;
                 border-radius: 15px;
-                padding: {padding}px;
-                font-size: {font_size}px;
-                font-family: "{self.custom_font}";
+                padding: {otstup}px;
+                font-size: {razmer_fonta}px;
+                font-family: "{self.svoy_font}";
                 text-shadow: 0 0 8px #ff69b4;
             }}
             QPushButton:hover {{
@@ -94,513 +94,514 @@ class MainMenu(QMainWindow):
                 border: 2px solid #ff1493;
             }}
         """
-        button.setStyleSheet(style)
-        if width and height:
-            button.setFixedSize(width, height)
-        return button
+        knopka.setStyleSheet(stil)
+        if shirina and visota:
+            knopka.setFixedSize(shirina, visota)
+        return knopka
 
-    def create_name_screen(self):
-        self.name_widget = QWidget()
+    def sozdat_ekran_imya(self):
+        self.widget_imya = QWidget()
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(30)
 
-        title = QLabel("ВВЕДИТЕ ИМЯ")
-        title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont(self.custom_font, 48, QFont.Bold))
-        title.setStyleSheet("""
+        zagolovok = QLabel("ВВЕДИТЕ ИМЯ")
+        zagolovok.setAlignment(Qt.AlignCenter)
+        zagolovok.setFont(QFont(self.svoy_font, 48, QFont.Bold))
+        zagolovok.setStyleSheet("""
             color: #ff00ff;
             text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
         """)
-        layout.addWidget(title)
+        layout.addWidget(zagolovok)
 
-        self.name_input = QLineEdit()
-        self.name_input.setPlaceholderText("Ваше имя")
-        self.name_input.setAlignment(Qt.AlignCenter)
-        self.name_input.setFont(QFont(self.custom_font, 24))
-        self.name_input.setStyleSheet("""
+        self.pole_imya = QLineEdit()
+        self.pole_imya.setPlaceholderText("Ваше имя")
+        self.pole_imya.setAlignment(Qt.AlignCenter)
+        self.pole_imya.setFont(QFont(self.svoy_font, 24))
+        self.pole_imya.setStyleSheet("""
             padding: 15px;
             border: 2px solid #ff69b4;
             border-radius: 15px;
             background-color: rgba(255, 255, 255, 0.2);
             color: white;
         """)
-        self.name_input.setMaxLength(15)
-        layout.addWidget(self.name_input)
+        self.pole_imya.setMaxLength(15)
+        layout.addWidget(self.pole_imya)
 
-        continue_btn = self.create_button("Продолжить")
-        continue_btn.clicked.connect(self.on_continue_name)
-        layout.addWidget(continue_btn)
+        knopka_dalee = self.sozdat_knopku("Продолжить")
+        knopka_dalee.clicked.connect(self.nazhat_dalee)
+        layout.addWidget(knopka_dalee)
 
-        self.name_widget.setLayout(layout)
+        self.widget_imya.setLayout(layout)
 
-    def create_main_menu(self):
-        self.main_menu_widget = QWidget()
+    def sozdat_glavnoe_menyu(self):
+        self.widget_menyu = QWidget()
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(30)
 
-        title = QLabel("FLAPPY BIRD")
-        title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont(self.custom_font, 48, QFont.Bold))
-        title.setStyleSheet("""
+        zagolovok = QLabel("FLAPPY BIRD")
+        zagolovok.setAlignment(Qt.AlignCenter)
+        zagolovok.setFont(QFont(self.svoy_font, 48, QFont.Bold))
+        zagolovok.setStyleSheet("""
             color: #ff00ff;
             text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
         """)
-        layout.addWidget(title)
+        layout.addWidget(zagolovok)
 
-        buttons = [
-            ("Играть", self.start_game),
-            ("Магазин", self.show_shop),
-            ("Таблица рекордов", self.show_leaderboard),
-            ("Выход", self.on_exit_click)
+        knopki = [
+            ("Играть", self.nachat_igru),
+            ("Магазин", self.pokazat_magazin),
+            ("Таблица рекордов", self.pokazat_rekordy),
+            ("Выход", self.vyiti)
         ]
 
-        for text, handler in buttons:
-            button = self.create_button(text)
-            button.clicked.connect(handler)
-            layout.addWidget(button)
+        for tekst, obrabotka in knopki:
+            knopka = self.sozdat_knopku(tekst)
+            knopka.clicked.connect(obrabotka)
+            layout.addWidget(knopka)
 
-        self.main_menu_widget.setLayout(layout)
+        self.widget_menyu.setLayout(layout)
 
-    def create_shop_screen(self):
-        self.shop_widget = QWidget()
+    def sozdat_magazin(self):
+        self.widget_magazin = QWidget()
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(20)
 
-        top_bar = QHBoxLayout()
-        back_btn = self.create_button("Вернуться", font_size=18, padding=10)
-        back_btn.clicked.connect(self.show_main_menu)
+        verhniy_ryad = QHBoxLayout()
+        knopka_nazad = self.sozdat_knopku("Вернуться", razmer_fonta=18, otstup=10)
+        knopka_nazad.clicked.connect(self.pokazat_glavnoe_menyu)
 
-        coins_label = QLabel(f"Монеты: {self.coins}")
-        coins_label.setObjectName("coins_label")
-        coins_label.setFont(QFont(self.custom_font, 18))
-        coins_label.setStyleSheet("color: yellow; font-weight: bold;")
+        label_monety = QLabel(f"Монеты: {self.monety}")
+        label_monety.setObjectName("label_monety")
+        label_monety.setFont(QFont(self.svoy_font, 18))
+        label_monety.setStyleSheet("color: yellow; font-weight: bold;")
 
-        top_bar.addWidget(back_btn)
-        top_bar.addStretch()
-        top_bar.addWidget(coins_label)
-        layout.addLayout(top_bar)
+        verhniy_ryad.addWidget(knopka_nazad)
+        verhniy_ryad.addStretch()
+        verhniy_ryad.addWidget(label_monety)
+        layout.addLayout(verhniy_ryad)
 
-        self.skin_display = QLabel("СКИН")
-        self.skin_display.setAlignment(Qt.AlignCenter)
-        self.skin_display.setFont(QFont(self.custom_font, 48, QFont.Bold))
-        self.skin_display.setStyleSheet("""
+        self.otobrazhenie_skina = QLabel("СКИН")
+        self.otobrazhenie_skina.setAlignment(Qt.AlignCenter)
+        self.otobrazhenie_skina.setFont(QFont(self.svoy_font, 48, QFont.Bold))
+        self.otobrazhenie_skina.setStyleSheet("""
             background-color: #dcdcdc;
             border: 2px solid #888;
             border-radius: 100px;
             padding: 50px;
             color: black;
         """)
-        layout.addWidget(self.skin_display)
+        layout.addWidget(self.otobrazhenie_skina)
 
-        nav_layout = QHBoxLayout()
-        prev_btn = self.create_button("◀", font_size=32, padding=10, width=80, height=80)
-        next_btn = self.create_button("▶", font_size=32, padding=10, width=80, height=80)
+        navigatsiya = QHBoxLayout()
+        knopka_nazad_skin = self.sozdat_knopku("◀", razmer_fonta=32, otstup=10, shirina=80, visota=80)
+        knopka_vpered_skin = self.sozdat_knopku("▶", razmer_fonta=32, otstup=10, shirina=80, visota=80)
 
-        prev_btn.clicked.connect(self.prev_skin)
-        next_btn.clicked.connect(self.next_skin)
+        knopka_nazad_skin.clicked.connect(self.predydushiy_skin)
+        knopka_vpered_skin.clicked.connect(self.sleduyushiy_skin)
 
-        nav_layout.addWidget(prev_btn)
-        nav_layout.addSpacing(20)
-        nav_layout.addWidget(next_btn)
-        layout.addLayout(nav_layout)
+        navigatsiya.addWidget(knopka_nazad_skin)
+        navigatsiya.addSpacing(20)
+        navigatsiya.addWidget(knopka_vpered_skin)
+        layout.addLayout(navigatsiya)
 
-        labels_layout = QHBoxLayout()
-        for text in ["Смена скина\nназад", "Смена скина\nвперед"]:
-            label = QLabel(text)
-            label.setAlignment(Qt.AlignCenter)
-            label.setFont(QFont(self.custom_font, 12))
-            labels_layout.addWidget(label)
-        layout.addLayout(labels_layout)
+        podpisi = QHBoxLayout()
+        for tekst in ["Смена скина\nназад", "Смена скина\nвперед"]:
+            podpis = QLabel(tekst)
+            podpis.setAlignment(Qt.AlignCenter)
+            podpis.setFont(QFont(self.svoy_font, 12))
+            podpisi.addWidget(podpis)
+        layout.addLayout(podpisi)
 
-        self.shop_widget.setLayout(layout)
+        self.widget_magazin.setLayout(layout)
 
-    def create_leaderboard_screen(self):
-        self.leaderboard_widget = QWidget()
+    def sozdat_tablitsu_rekordov(self):
+        self.widget_rekordy = QWidget()
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(20)
 
-        title = QLabel("ТАБЛИЦА РЕКОРДОВ")
-        title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont(self.custom_font, 36, QFont.Bold))
-        title.setStyleSheet("""
+        zagolovok = QLabel("ТАБЛИЦА РЕКОРДОВ")
+        zagolovok.setAlignment(Qt.AlignCenter)
+        zagolovok.setFont(QFont(self.svoy_font, 36, QFont.Bold))
+        zagolovok.setStyleSheet("""
             color: #ff00ff;
             text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
         """)
-        layout.addWidget(title)
+        layout.addWidget(zagolovok)
 
-        self.leaderboard_content = QWidget()
-        self.leaderboard_content_layout = QVBoxLayout()
-        self.leaderboard_content_layout.setAlignment(Qt.AlignCenter)
-        self.leaderboard_content.setLayout(self.leaderboard_content_layout)
-        layout.addWidget(self.leaderboard_content)
+        self.soderzhanie_rekordov = QWidget()
+        self.layout_rekordov = QVBoxLayout()
+        self.layout_rekordov.setAlignment(Qt.AlignCenter)
+        self.soderzhanie_rekordov.setLayout(self.layout_rekordov)
+        layout.addWidget(self.soderzhanie_rekordov)
 
-        back_btn = self.create_button("Назад")
-        back_btn.clicked.connect(self.show_main_menu)
-        layout.addWidget(back_btn)
+        knopka_nazad = self.sozdat_knopku("Назад")
+        knopka_nazad.clicked.connect(self.pokazat_glavnoe_menyu)
+        layout.addWidget(knopka_nazad)
 
-        self.leaderboard_widget.setLayout(layout)
-        self.update_leaderboard_display()
+        self.widget_rekordy.setLayout(layout)
+        self.obnovit_rekordy()
 
-    def update_leaderboard_display(self):
-        # Очистка старых записей
-        while self.leaderboard_content_layout.count():
-            child = self.leaderboard_content_layout.takeAt(0)
+    def obnovit_rekordy(self):
+        while self.layout_rekordov.count():
+            child = self.layout_rekordov.takeAt(0)
             if child.widget():
                 child.widget().deleteLater()
 
-        self.leaderboard_records = self.load_leaderboard()
+        self.rekordy = self.zagruzit_rekordy()
 
-        if not self.leaderboard_records:
-            no_records = QLabel("Нет рекордов")
-            no_records.setAlignment(Qt.AlignCenter)
-            no_records.setFont(QFont(self.custom_font, 20))
-            no_records.setStyleSheet("color: white;")
-            self.leaderboard_content_layout.addWidget(no_records)
+        if not self.rekordy:
+            nadpis = QLabel("Нет рекордов")
+            nadpis.setAlignment(Qt.AlignCenter)
+            nadpis.setFont(QFont(self.svoy_font, 20))
+            nadpis.setStyleSheet("color: white;")
+            self.layout_rekordov.addWidget(nadpis)
         else:
-            for name, score in self.leaderboard_records:
-                label = QLabel(f"{name} — {score}")
-                label.setAlignment(Qt.AlignCenter)
-                label.setFont(QFont(self.custom_font, 20))
-                label.setStyleSheet("color: white; background-color: rgba(255, 105, 180, 0.2); padding: 10px; border-radius: 10px;")
-                self.leaderboard_content_layout.addWidget(label)
+            for imya, ochki in self.rekordy:
+                nadpis = QLabel(f"{imya} — {ochki}")
+                nadpis.setAlignment(Qt.AlignCenter)
+                nadpis.setFont(QFont(self.svoy_font, 20))
+                nadpis.setStyleSheet("color: white; background-color: rgba(255, 105, 180, 0.2); padding: 10px; border-radius: 10px;")
+                self.layout_rekordov.addWidget(nadpis)
 
-    def create_game_screen(self):
-        self.game_widget = QWidget()
-        self.game_widget.setFocusPolicy(Qt.StrongFocus)
+    def sozdat_ekran_igry(self):
+        self.widget_igra = QWidget()
+        self.widget_igra.setFocusPolicy(Qt.StrongFocus)
         layout = QVBoxLayout()
         layout.setContentsMargins(0, 0, 0, 0)
 
-        self.scene = QGraphicsScene()
-        self.view = QGraphicsView(self.scene)
-        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
-        self.view.setStyleSheet("background: transparent; border: none;")
-        self.view.setRenderHint(QPainter.Antialiasing)
+        self.scena = QGraphicsScene()
+        self.vid = QGraphicsView(self.scena)
+        self.vid.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.vid.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.vid.setStyleSheet("background: transparent; border: none;")
+        self.vid.setRenderHint(QPainter.Antialiasing)
 
-        layout.addWidget(self.view)
-        self.game_widget.setLayout(layout)
+        layout.addWidget(self.vid)
+        self.widget_igra.setLayout(layout)
 
-    def show_name_screen(self):
-        self.name_widget.setVisible(True)
-        self.main_menu_widget.setVisible(False)
-        self.shop_widget.setVisible(False)
-        self.leaderboard_widget.setVisible(False)
-        self.game_widget.setVisible(False)
+    def pokazat_ekran_imya(self):
+        self.widget_imya.setVisible(True)
+        self.widget_menyu.setVisible(False)
+        self.widget_magazin.setVisible(False)
+        self.widget_rekordy.setVisible(False)
+        self.widget_igra.setVisible(False)
 
-    def show_main_menu(self):
-        self.clck.play()
-        self.cleanup_game_ui()
-        self.name_widget.setVisible(False)
-        self.main_menu_widget.setVisible(True)
-        self.shop_widget.setVisible(False)
-        self.leaderboard_widget.setVisible(False)
-        self.game_widget.setVisible(False)
-        self.update_leaderboard_display()
+    def pokazat_glavnoe_menyu(self):
+        self.zvuk_knopki.play()
+        self.ochistit_igru()
+        self.widget_imya.setVisible(False)
+        self.widget_menyu.setVisible(True)
+        self.widget_magazin.setVisible(False)
+        self.widget_rekordy.setVisible(False)
+        self.widget_igra.setVisible(False)
+        self.obnovit_rekordy()
 
-    def show_shop(self):
-        self.clck.play()
-        self.name_widget.setVisible(False)
-        self.main_menu_widget.setVisible(False)
-        self.shop_widget.setVisible(True)
-        self.leaderboard_widget.setVisible(False)
-        self.game_widget.setVisible(False)
-        self.update_skin_display()
-        coins_label = self.shop_widget.findChild(QLabel, "coins_label")
-        if coins_label:
-            coins_label.setText(f"Монеты: {self.coins}")
+    def pokazat_magazin(self):
+        self.zvuk_knopki.play()
+        self.widget_imya.setVisible(False)
+        self.widget_menyu.setVisible(False)
+        self.widget_magazin.setVisible(True)
+        self.widget_rekordy.setVisible(False)
+        self.widget_igra.setVisible(False)
+        self.obnovit_skiny()
+        label = self.widget_magazin.findChild(QLabel, "label_monety")
+        if label:
+            label.setText(f"Монеты: {self.monety}")
 
-    def show_leaderboard(self):
-        self.clck.play()
-        self.name_widget.setVisible(False)
-        self.main_menu_widget.setVisible(False)
-        self.shop_widget.setVisible(False)
-        self.leaderboard_widget.setVisible(True)
-        self.game_widget.setVisible(False)
+    def pokazat_rekordy(self):
+        self.zvuk_knopki.play()
+        self.widget_imya.setVisible(False)
+        self.widget_menyu.setVisible(False)
+        self.widget_magazin.setVisible(False)
+        self.widget_rekordy.setVisible(True)
+        self.widget_igra.setVisible(False)
 
-    def show_game(self):
-        self.clck.play()
-        self.name_widget.setVisible(False)
-        self.main_menu_widget.setVisible(False)
-        self.shop_widget.setVisible(False)
-        self.leaderboard_widget.setVisible(False)
-        self.game_widget.setVisible(True)
-        self.init_game()
+    def pokazat_igru(self):
+        self.zvuk_knopki.play()
+        self.widget_imya.setVisible(False)
+        self.widget_menyu.setVisible(False)
+        self.widget_magazin.setVisible(False)
+        self.widget_rekordy.setVisible(False)
+        self.widget_igra.setVisible(True)
+        self.nachat_igru_vnutri()
 
-    def update_score_position(self):
-        if hasattr(self, 'score_text'):
-            w = self.scene.width()
-            text_rect = self.score_text.boundingRect()
-            self.score_text.setPos(w - text_rect.width() - 20, 20)
+    def obnovit_pozitsiyu_scheta(self):
+        if hasattr(self, 'tekst_scheta'):
+            w = self.scena.width()
+            rect = self.tekst_scheta.boundingRect()
+            self.tekst_scheta.setPos(w - rect.width() - 20, 20)
 
-    def init_game(self):
-        self.scene.clear()
+    def nachat_igru_vnutri(self):
+        self.scena.clear()
         w, h = self.width(), self.height()
-        self.view.setFixedSize(w, h)
-        self.scene.setSceneRect(0, 0, w, h)
+        self.vid.setFixedSize(w, h)
+        self.scena.setSceneRect(0, 0, w, h)
 
-        self.GRAVITY = 0.6
-        self.JUMP_STRENGTH = -7
-        self.PIPE_SPEED = 3
-        self.PIPE_WIDTH = 52
-        self.GAP_HEIGHT = 20
-        self.TOP_MARGIN = 60
-        self.SCORE = 0
+        self.GRAVITATSIYA = 0.6
+        self.SILA_PRYZHKA = -7
+        self.SKOROST_TRUB = 3
+        self.SHIRINA_TRUBY = 52
+        self.VYSOTA_PROREZI = 20
+        self.OTSTUP_SVERHU = 60
+        self.SCHET = 0
 
-        self.bird_radius = 16
-        pen = QPen(QColor("white"), 3)
-        brush = QBrush(QColor("#ff69b4"))
-        self.bird = self.scene.addEllipse(0, 0, self.bird_radius * 2, self.bird_radius * 2, pen=pen, brush=brush)
-        self.bird.setPos(100, h // 2)
+        radius_ptitsy = 16
+        perо = QPen(QColor("white"), 3)
+        kist = QBrush(QColor("#ff69b4"))
+        self.ptitsa = self.scena.addEllipse(0, 0, radius_ptitsy * 2, radius_ptitsy * 2, pen=perо, brush=kist)
+        self.ptitsa.setPos(100, h // 2)
 
-        self.bird_velocity = 0
-        self.pipes = []
+        self.skorost_ptitsy = 0
+        self.truby = []
 
-        font = QFont(self.custom_font, 28, QFont.Bold)
-        self.score_text = self.scene.addText("0", font)
-        self.score_text.setDefaultTextColor(QColor("white"))
-        self.score_text.setZValue(100)
-        self.update_score_position()
+        font = QFont(self.svoy_font, 28, QFont.Bold)
+        self.tekst_scheta = self.scena.addText("0", font)
+        self.tekst_scheta.setDefaultTextColor(QColor("white"))
+        self.tekst_scheta.setZValue(100)
+        self.obnovit_pozitsiyu_scheta()
 
-        self.back_button_game = self.create_button("Назад", font_size=16, padding=6, width=90, height=35)
-        self.back_button_game.clicked.connect(self.show_main_menu)
-        self.back_button_game.setParent(self.view)
-        self.back_button_game.move(20, 20)
-        self.back_button_game.show()
+        self.knopka_nazad_v_igre = self.sozdat_knopku("Назад", razmer_fonta=16, otstup=6, shirina=90, visota=35)
+        self.knopka_nazad_v_igre.clicked.connect(self.pokazat_glavnoe_menyu)
+        self.knopka_nazad_v_igre.setParent(self.vid)
+        self.knopka_nazad_v_igre.move(20, 20)
+        self.knopka_nazad_v_igre.show()
 
-        self.pipe_timer = QTimer()
-        self.pipe_timer.timeout.connect(self.spawn_pipe)
-        self.pipe_timer.start(2800)
+        self.timer_trub = QTimer()
+        self.timer_trub.timeout.connect(self.sozydat_trubu)
+        self.timer_trub.start(2800)
 
-        self.game_timer = QTimer()
-        self.game_timer.timeout.connect(self.update_game)
-        self.game_timer.start(30)
+        self.timer_igry = QTimer()
+        self.timer_igry.timeout.connect(self.obnovlenie_igry)
+        self.timer_igry.start(30)
 
-        self.game_widget.setFocus()
-        self.game_widget.setFocusPolicy(Qt.StrongFocus)
-        self.game_widget.setFocus(Qt.OtherFocusReason)
+        self.widget_igra.setFocus()
+        self.widget_igra.setFocusPolicy(Qt.StrongFocus)
+        self.widget_igra.setFocus(Qt.OtherFocusReason)
         self.activateWindow()
 
-        if self.bg_music:
-            self.bg_music.play()
+        if self.fon_muzika:
+            self.fon_muzika.play()
 
-    def spawn_pipe(self):
-        h = self.scene.height()
-        if h <= self.TOP_MARGIN + self.GAP_HEIGHT:
+    def sozydat_trubu(self):
+        h = self.scena.height()
+        if h <= self.OTSTUP_SVERHU + self.VYSOTA_PROREZI:
             return
 
-        MIN_GAP_HEIGHT = self.bird_radius * 3
+        MIN_VYSOTA_PROREZI = 16 * 3
 
-        actual_gap_height = max(self.GAP_HEIGHT, MIN_GAP_HEIGHT)
+        realnaya_vysota = max(self.VYSOTA_PROREZI, MIN_VYSOTA_PROREZI)
 
-        min_gap_top = self.TOP_MARGIN + 40
-        max_gap_top = int(h - actual_gap_height - 20)
+        min_vverhu = self.OTSTUP_SVERHU + 40
+        max_vverhu = int(h - realnaya_vysota - 20)
 
-        if max_gap_top <= min_gap_top:
-            gap_top = min_gap_top
+        if max_vverhu <= min_vverhu:
+            vverhu = min_vverhu
         else:
-            gap_top = random.randint(min_gap_top, max_gap_top)
+            vverhu = random.randint(min_vverhu, max_vverhu)
 
-        gap_bottom = gap_top + actual_gap_height
+        vnizu = vverhu + realnaya_vysota
 
-        pipe_color = QColor("#ff69b4")
-        pipe_pen = QPen(pipe_color, 2)
-        pipe_brush = QBrush(pipe_color)
+        tsvet_truby = QColor("#ff69b4")
+        pero_truby = QPen(tsvet_truby, 2)
+        kist_truby = QBrush(tsvet_truby)
 
-        top_pipe = self.scene.addRect(0, 0, self.PIPE_WIDTH, gap_top, pen=pipe_pen, brush=pipe_brush)
-        bottom_pipe = self.scene.addRect(0, gap_bottom, self.PIPE_WIDTH, h - gap_bottom, pen=pipe_pen, brush=pipe_brush)
+        truba_verh = self.scena.addRect(0, 0, self.SHIRINA_TRUBY, vverhu, pen=pero_truby, brush=kist_truby)
+        truba_niz = self.scena.addRect(0, vnizu, self.SHIRINA_TRUBY, h - vnizu, pen=pero_truby, brush=kist_truby)
 
-        top_pipe.setPos(self.scene.width(), 0)
-        bottom_pipe.setPos(self.scene.width(), gap_bottom)
+        truba_verh.setPos(self.scena.width(), 0)
+        truba_niz.setPos(self.scena.width(), vnizu)
 
-        top_pipe.setData(0, False)
-        self.pipes.append((top_pipe, bottom_pipe))
+        truba_verh.setData(0, False)
+        self.truby.append((truba_verh, truba_niz))
 
-    def update_game(self):
-        if not self.game_widget.isVisible():
+    def obnovlenie_igry(self):
+        if not self.widget_igra.isVisible():
             return
 
-        self.bird_velocity += self.GRAVITY
-        self.bird.moveBy(0, self.bird_velocity)
+        self.skorost_ptitsy += self.GRAVITATSIYA
+        self.ptitsa.moveBy(0, self.skorost_ptitsy)
 
-        bird_center_x = self.bird.x() + self.bird_radius
-        bird_center_y = self.bird.y() + self.bird_radius
-        scene_h = self.scene.height()
+        tsentr_x = self.ptitsa.x() + 16
+        tsentr_y = self.ptitsa.y() + 16
+        visota_sceny = self.scena.height()
 
-        if bird_center_y - self.bird_radius <= 0 or bird_center_y + self.bird_radius >= scene_h:
-            self.game_over()
+        if tsentr_y - 16 <= 0 or tsentr_y + 16 >= visota_sceny:
+            self.konets_igry()
             return
 
-        pipes_to_remove = []
-        for top_pipe, bottom_pipe in self.pipes:
-            top_pipe.moveBy(-self.PIPE_SPEED, 0)
-            bottom_pipe.moveBy(-self.PIPE_SPEED, 0)
+        udalit_truby = []
+        for verh, niz in self.truby:
+            verh.moveBy(-self.SKOROST_TRUB, 0)
+            niz.moveBy(-self.SKOROST_TRUB, 0)
 
-            if not top_pipe.data(0) and (top_pipe.x() + self.PIPE_WIDTH < bird_center_x):
-                top_pipe.setData(0, True)
-                self.SCORE += 1
-                self.score_text.setPlainText(str(self.SCORE))
-                self.update_score_position()
+            if not verh.data(0) and (verh.x() + self.SHIRINA_TRUBY < tsentr_x):
+                verh.setData(0, True)
+                self.SCHET += 1
+                self.tekst_scheta.setPlainText(str(self.SCHET))
+                self.obnovit_pozitsiyu_scheta()
 
-            bird_rect = QRectF(bird_center_x - self.bird_radius, bird_center_y - self.bird_radius,
-                               self.bird_radius * 2, self.bird_radius * 2)
-            top_rect = top_pipe.boundingRect().translated(top_pipe.pos())
-            bottom_rect = bottom_pipe.boundingRect().translated(bottom_pipe.pos())
+            ptitsa_rect = QRectF(tsentr_x - 16, tsentr_y - 16, 32, 32)
+            rect_verh = verh.boundingRect().translated(verh.pos())
+            rect_niz = niz.boundingRect().translated(niz.pos())
 
-            if bird_rect.intersects(top_rect) or bird_rect.intersects(bottom_rect):
-                self.game_over()
+            if ptitsa_rect.intersects(rect_verh) or ptitsa_rect.intersects(rect_niz):
+                self.konets_igry()
                 return
 
-            if top_pipe.x() + self.PIPE_WIDTH < 0:
-                self.scene.removeItem(top_pipe)
-                self.scene.removeItem(bottom_pipe)
-                pipes_to_remove.append((top_pipe, bottom_pipe))
+            if verh.x() + self.SHIRINA_TRUBY < 0:
+                self.scena.removeItem(verh)
+                self.scena.removeItem(niz)
+                udalit_truby.append((verh, niz))
 
-        for pipe_pair in pipes_to_remove:
-            self.pipes.remove(pipe_pair)
+        for para in udalit_truby:
+            self.truby.remove(para)
 
-    def game_over(self):
-        if self.SCORE > 0:
-            earned_coins = self.SCORE // 5
-            self.coins += earned_coins
-            self.save_coins()
+    def konets_igry(self):
+        if self.SCHET > 0:
+            zarabotano = self.SCHET // 5
+            self.monety += zarabotano
+            self.sohranit_monety()
 
-            if self.player_name:
-                self.leaderboard_records = self.load_leaderboard()
-                new_record = (self.player_name, self.SCORE)
+            if self.imya_igroka:
+                self.rekordy = self.zagruzit_rekordy()
+                novaya_zapis = (self.imya_igroka, self.SCHET)
 
-                exists = any(name == self.player_name and score == self.SCORE for name, score in self.leaderboard_records)
+                est_li = any(imya == self.imya_igroka and ochki == self.SCHET for imya, ochki in self.rekordy)
 
-                if not exists:
-                    self.leaderboard_records.append(new_record)
-                    self.leaderboard_records.sort(key=lambda x: x[1], reverse=True)
-                    self.leaderboard_records = self.leaderboard_records[:5]
-                    self.save_leaderboard(self.leaderboard_records)
+                if not est_li:
+                    self.rekordy.append(novaya_zapis)
+                    self.rekordy.sort(key=lambda x: x[1], reverse=True)
+                    self.rekordy = self.rekordy[:5]
+                    self.sohranit_rekordy(self.rekordy)
 
-        self.game_timer.stop()
-        self.pipe_timer.stop()
-        self.show_game_over_screen()
+        self.timer_igry.stop()
+        self.timer_trub.stop()
+        self.pokazat_ekran_konca()
 
-    def show_game_over_screen(self):
-        if hasattr(self, 'game_over_widget') and self.game_over_widget:
-            self.game_over_widget.show()
+    def pokazat_ekran_konca(self):
+        if hasattr(self, 'widget_konca') and self.widget_konca:
+            self.nadpis_konca.setText(f"Игра окончена!\nСчёт: {self.SCHET}")
+            self.widget_konca.show()
+            if hasattr(self, 'knopka_nazad_v_igre'):
+                self.knopka_nazad_v_igre.hide()
             return
 
-        self.game_over_widget = QWidget(self.view)
-        self.game_over_widget.setGeometry(0, 0, self.width(), self.height())
-        self.game_over_widget.setStyleSheet("background-color: rgba(0, 0, 0, 180);")
+        self.widget_konca = QWidget(self.vid)
+        self.widget_konca.setGeometry(0, 0, self.width(), self.height())
+        self.widget_konca.setStyleSheet("background-color: rgba(0, 0, 0, 180);")
 
         layout = QVBoxLayout()
         layout.setAlignment(Qt.AlignCenter)
         layout.setSpacing(15)
 
-        label = QLabel(f"Игра окончена!\nСчёт: {self.SCORE}")
-        label.setFont(QFont(self.custom_font, 32, QFont.Bold))
-        label.setStyleSheet("color: white;")
-        label.setAlignment(Qt.AlignCenter)
-        layout.addWidget(label)
+        self.nadpis_konca = QLabel(f"Игра окончена!\nСчёт: {self.SCHET}")
+        self.nadpis_konca.setFont(QFont(self.svoy_font, 32, QFont.Bold))
+        self.nadpis_konca.setStyleSheet("color: white;")
+        self.nadpis_konca.setAlignment(Qt.AlignCenter)
+        layout.addWidget(self.nadpis_konca)
 
-        retry_btn = self.create_button("Повторить", font_size=24)
-        retry_btn.clicked.connect(self.restart_game)
-        layout.addWidget(retry_btn)
+        knopka_esche = self.sozdat_knopku("Повторить", razmer_fonta=24)
+        knopka_esche.clicked.connect(self.zanovo)
+        layout.addWidget(knopka_esche)
 
-        back_btn = self.create_button("Меню", font_size=24)
-        back_btn.clicked.connect(self.show_main_menu)
-        layout.addWidget(back_btn)
+        knopka_menyu = self.sozdat_knopku("Меню", razmer_fonta=24)
+        knopka_menyu.clicked.connect(self.pokazat_glavnoe_menyu)
+        layout.addWidget(knopka_menyu)
 
-        self.game_over_widget.setLayout(layout)
-        self.game_over_widget.show()
+        self.widget_konca.setLayout(layout)
+        self.widget_konca.show()
 
-        if hasattr(self, 'back_button_game'):
-            self.back_button_game.hide()
+        if hasattr(self, 'knopka_nazad_v_igre'):
+            self.knopka_nazad_v_igre.hide()
 
-    def restart_game(self):
-        if hasattr(self, 'game_over_widget') and self.game_over_widget:
-            self.game_over_widget.hide()
-        self.show_game()
+    def zanovo(self):
+        if hasattr(self, 'widget_konca') and self.widget_konca:
+            self.widget_konca.hide()
+        self.pokazat_igru()
 
-    def cleanup_game_ui(self):
-        if self.bg_music:
-            self.bg_music.pause()
-            self.bg_music.setPosition(0)
-        if hasattr(self, 'back_button_game'):
-            self.back_button_game.hide()
-        if hasattr(self, 'game_over_widget') and self.game_over_widget:
-            self.game_over_widget.hide()
+    def ochistit_igru(self):
+        if self.fon_muzika:
+            self.fon_muzika.pause()
+            self.fon_muzika.setPosition(0)
+        if hasattr(self, 'knopka_nazad_v_igre'):
+            self.knopka_nazad_v_igre.hide()
+        if hasattr(self, 'widget_konca') and self.widget_konca:
+            self.widget_konca.hide()
 
-    def start_game(self):
-        self.show_game()
+    def nachat_igru(self):
+        self.pokazat_igru()
 
-    def on_continue_name(self):
-        name = self.name_input.text().strip()
-        if name:
-            self.player_name = name
-            self.show_main_menu()
+    def nazhat_dalee(self):
+        imya = self.pole_imya.text().strip()
+        if imya:
+            self.imya_igroka = imya
+            self.pokazat_glavnoe_menyu()
 
-    def update_skin_display(self):
-        current_skin_name = self.skins[self.current_skin_index]
-        self.skin_display.setText(current_skin_name)
+    def obnovit_skiny(self):
+        nazvanie = self.skiny[self.indeks_skina]
+        self.otobrazhenie_skina.setText(nazvanie)
 
-    def prev_skin(self):
-        self.clck.play()
-        self.current_skin_index = (self.current_skin_index - 1) % len(self.skins)
-        self.update_skin_display()
+    def predydushiy_skin(self):
+        self.zvuk_knopki.play()
+        self.indeks_skina = (self.indeks_skina - 1) % len(self.skiny)
+        self.obnovit_skiny()
 
-    def next_skin(self):
-        self.clck.play()
-        self.current_skin_index = (self.current_skin_index + 1) % len(self.skins)
-        self.update_skin_display()
+    def sleduyushiy_skin(self):
+        self.zvuk_knopki.play()
+        self.indeks_skina = (self.indeks_skina + 1) % len(self.skiny)
+        self.obnovit_skiny()
 
-    def on_exit_click(self):
-        self.clck.play()
+    def vyiti(self):
+        self.zvuk_knopki.play()
         QApplication.quit()
 
-    def set_back(self):
-        palette = QPalette()
+    def ustanovit_fon(self):
+        palitra = QPalette()
         gradient = QLinearGradient(0, 0, 0, self.height())
         gradient.setColorAt(0, QColor("#ffafcc"))
         gradient.setColorAt(1, QColor("#bde0fe"))
-        palette.setBrush(QPalette.Window, QBrush(gradient))
-        self.setPalette(palette)
+        palitra.setBrush(QPalette.Window, QBrush(gradient))
+        self.setPalette(palitra)
 
     def resizeEvent(self, event):
-        self.set_back()
+        self.ustanovit_fon()
         super().resizeEvent(event)
 
     def keyPressEvent(self, event):
-        if self.game_widget.isVisible():
+        if self.widget_igra.isVisible():
             if event.key() == Qt.Key_Space:
-                self.bird_velocity = self.JUMP_STRENGTH
-                self.clck.play()
+                self.skorost_ptitsy = self.SILA_PRYZHKA
+                self.zvuk_knopki.play()
             elif event.key() == Qt.Key_Escape:
-                self.show_main_menu()
+                self.pokazat_glavnoe_menyu()
         else:
             super().keyPressEvent(event)
 
-    def load_leaderboard(self):
-        records = []
+    def zagruzit_rekordy(self):
+        zapisi = []
         if os.path.exists("leaderboard.txt"):
             with open("leaderboard.txt", "r", encoding="utf-8") as f:
-                for line in f:
-                    line = line.strip()
-                    if line:
+                for stroka in f:
+                    stroka = stroka.strip()
+                    if stroka:
                         try:
-                            name, score = line.rsplit(" — ", 1)
-                            records.append((name, int(score)))
+                            imya, ochki = stroka.rsplit(" — ", 1)
+                            zapisi.append((imya, int(ochki)))
                         except ValueError:
                             continue
-        records.sort(key=lambda x: x[1], reverse=True)
-        return records[:5]
+        zapisi.sort(key=lambda x: x[1], reverse=True)
+        return zapisi[:5]
 
-    def save_leaderboard(self, records):
+    def sohranit_rekordy(self, zapisi):
         with open("leaderboard.txt", "w", encoding="utf-8") as f:
-            for name, score in records:
-                f.write(f"{name} — {score}\n")
+            for imya, ochki in zapisi:
+                f.write(f"{imya} — {ochki}\n")
 
-    def load_coins(self):
+    def zagruzit_monety(self):
         if os.path.exists("user.txt"):
             try:
                 with open("user.txt", "r") as f:
@@ -609,13 +610,13 @@ class MainMenu(QMainWindow):
                 return 0
         return 0
 
-    def save_coins(self):
+    def sohranit_monety(self):
         with open("user.txt", "w") as f:
-            f.write(str(self.coins))
+            f.write(str(self.monety))
 
 
 if __name__ == "__main__":
     app = QApplication(sys.argv)
-    window = MainMenu()
-    window.show()
+    okno = GlavnoeMenyu()
+    okno.show()
     sys.exit(app.exec_())
