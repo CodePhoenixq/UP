@@ -55,8 +55,30 @@ class MainMenu(QMainWindow):
         self.main_layout.addWidget(self.leaderboard_widget)
 
         self.show_main_menu()
-
         self.set_back()
+
+    def create_button(self, text, font_size=24, padding=15, width=None, height=None):
+        button = QPushButton(text)
+        style = f"""
+            QPushButton {{
+                background-color: rgba(255, 105, 180, 0.3);
+                color: white;
+                border: 2px solid #ff69b4;
+                border-radius: 15px;
+                padding: {padding}px;
+                font-size: {font_size}px;
+                font-family: "{self.custom_font}";
+                text-shadow: 0 0 8px #ff69b4;
+            }}
+            QPushButton:hover {{
+                background-color: rgba(255, 105, 180, 0.6);
+                border: 2px solid #ff1493;
+            }}
+        """
+        button.setStyleSheet(style)
+        if width and height:
+            button.setFixedSize(width, height)
+        return button
 
     def create_main_menu(self):
         self.main_menu_widget = QWidget()
@@ -73,36 +95,17 @@ class MainMenu(QMainWindow):
         """)
         layout.addWidget(title)
 
-        button_style = f"""
-            QPushButton {{
-                background-color: rgba(255, 105, 180, 0.3);
-                color: white;
-                border: 2px solid #ff69b4;
-                border-radius: 15px;
-                padding: 15px;
-                font-size: 24px;
-                font-family: "{self.custom_font}";
-                text-shadow: 0 0 8px #ff69b4;
-            }}
-            QPushButton:hover {{
-                background-color: rgba(255, 105, 180, 0.6);
-                border: 2px solid #ff1493;
-            }}
-        """
+        buttons = [
+            ("Играть", self.start_game),
+            ("Магазин", self.show_shop),
+            ("Таблица рекордов", self.show_leaderboard),
+            ("Выход", self.on_exit_click)
+        ]
 
-        play_btn = QPushButton("Играть")
-        shop_btn = QPushButton("Магазин")
-        leaderboard_btn = QPushButton("Таблица рекордов")
-        exit_btn = QPushButton("Выход")
-
-        for btn in [play_btn, shop_btn, leaderboard_btn, exit_btn]:
-            btn.setStyleSheet(button_style)
-            layout.addWidget(btn)
-
-        play_btn.clicked.connect(self.start_game)
-        shop_btn.clicked.connect(self.show_shop)
-        leaderboard_btn.clicked.connect(self.show_leaderboard)
-        exit_btn.clicked.connect(self.on_exit_click)
+        for text, handler in buttons:
+            button = self.create_button(text)
+            button.clicked.connect(handler)
+            layout.addWidget(button)
 
         self.main_menu_widget.setLayout(layout)
 
@@ -113,28 +116,13 @@ class MainMenu(QMainWindow):
         layout.setSpacing(20)
 
         top_bar = QHBoxLayout()
-        back_btn = QPushButton("Вернуться")
+        back_btn = self.create_button("Вернуться", font_size=18, padding=10)
+        back_btn.clicked.connect(self.show_main_menu)
+
         coins_label = QLabel(f"Монеты: {self.coins}")
         coins_label.setFont(QFont(self.custom_font, 18))
         coins_label.setStyleSheet("color: yellow; font-weight: bold;")
-        back_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: rgba(255, 105, 180, 0.3);
-                color: white;
-                border: 2px solid #ff69b4;
-                border-radius: 15px;
-                padding: 10px;
-                font-size: 18px;
-                font-family: "{self.custom_font}";
-                text-shadow: 0 0 8px #ff69b4;
-            }}
-            QPushButton:hover {{
-                background-color: rgba(255, 105, 180, 0.6);
-                border: 2px solid #ff1493;
-            }}
-        """)
 
-        back_btn.clicked.connect(self.show_main_menu)
         top_bar.addWidget(back_btn)
         top_bar.addStretch()
         top_bar.addWidget(coins_label)
@@ -153,27 +141,8 @@ class MainMenu(QMainWindow):
         layout.addWidget(self.skin_display)
 
         nav_layout = QHBoxLayout()
-        prev_btn = QPushButton("◀")
-        next_btn = QPushButton("▶")
-        prev_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: rgba(255, 105, 180, 0.3);
-                color: white;
-                border: 2px solid #ff69b4;
-                border-radius: 15px;
-                padding: 10px;
-                font-size: 32px;
-                font-family: "{self.custom_font}";
-                text-shadow: 0 0 8px #ff69b4;
-            }}
-            QPushButton:hover {{
-                background-color: rgba(255, 105, 180, 0.6);
-                border: 2px solid #ff1493;
-            }}
-        """)
-        next_btn.setStyleSheet(prev_btn.styleSheet())
-        prev_btn.setFixedSize(80, 80)
-        next_btn.setFixedSize(80, 80)
+        prev_btn = self.create_button("◀", font_size=32, padding=10, width=80, height=80)
+        next_btn = self.create_button("▶", font_size=32, padding=10, width=80, height=80)
 
         prev_btn.clicked.connect(self.prev_skin)
         next_btn.clicked.connect(self.next_skin)
@@ -184,14 +153,11 @@ class MainMenu(QMainWindow):
         layout.addLayout(nav_layout)
 
         labels_layout = QHBoxLayout()
-        prev_label = QLabel("Смена скина\nназад")
-        next_label = QLabel("Смена скина\nвперед")
-        prev_label.setAlignment(Qt.AlignCenter)
-        next_label.setAlignment(Qt.AlignCenter)
-        prev_label.setFont(QFont(self.custom_font, 12))
-        next_label.setFont(QFont(self.custom_font, 12))
-        labels_layout.addWidget(prev_label)
-        labels_layout.addWidget(next_label)
+        for text in ["Смена скина\nназад", "Смена скина\nвперед"]:
+            label = QLabel(text)
+            label.setAlignment(Qt.AlignCenter)
+            label.setFont(QFont(self.custom_font, 12))
+            labels_layout.addWidget(label)
         layout.addLayout(labels_layout)
 
         self.shop_widget.setLayout(layout)
@@ -211,7 +177,6 @@ class MainMenu(QMainWindow):
         """)
         layout.addWidget(title)
 
-        # заглушечка
         scores = [
             "Александр — 42",
             "Вика — 665",
@@ -227,23 +192,7 @@ class MainMenu(QMainWindow):
             label.setStyleSheet("color: white; background-color: rgba(255, 105, 180, 0.2); padding: 10px; border-radius: 10px;")
             layout.addWidget(label)
 
-        back_btn = QPushButton("Назад")
-        back_btn.setStyleSheet(f"""
-            QPushButton {{
-                background-color: rgba(255, 105, 180, 0.3);
-                color: white;
-                border: 2px solid #ff69b4;
-                border-radius: 15px;
-                padding: 15px;
-                font-size: 24px;
-                font-family: "{self.custom_font}";
-                text-shadow: 0 0 8px #ff69b4;
-            }}
-            QPushButton:hover {{
-                background-color: rgba(255, 105, 180, 0.6);
-                border: 2px solid #ff1493;
-            }}
-        """)
+        back_btn = self.create_button("Назад")
         back_btn.clicked.connect(self.show_main_menu)
         layout.addWidget(back_btn)
 
