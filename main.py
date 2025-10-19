@@ -1,8 +1,9 @@
 import sys
+import random
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDesktopWidget, QLineEdit
-from PyQt5.QtCore import Qt, QUrl
-from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor, QLinearGradient, QBrush
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDesktopWidget, QLineEdit, QGraphicsView, QGraphicsScene, QGraphicsTextItem
+from PyQt5.QtCore import Qt, QUrl, QTimer, QRectF
+from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor, QLinearGradient, QBrush, QPainter, QPen
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 
 
@@ -33,7 +34,10 @@ class MainMenu(QMainWindow):
 
         font_path = "mat/f/Comfortaa.ttf"
         font_id = QFontDatabase.addApplicationFont(font_path)
-        self.custom_font = QFontDatabase.applicationFontFamilies(font_id)[0]
+        if font_id == -1:
+            self.custom_font = "Arial"
+        else:
+            self.custom_font = QFontDatabase.applicationFontFamilies(font_id)[0]
 
         self.clck = QMediaPlayer()
         self.clck.setMedia(QMediaContent(QUrl.fromLocalFile("mat/s/hump.mp3")))
@@ -240,23 +244,18 @@ class MainMenu(QMainWindow):
 
     def create_game_screen(self):
         self.game_widget = QWidget()
+        self.game_widget.setFocusPolicy(Qt.StrongFocus)
         layout = QVBoxLayout()
-        layout.setAlignment(Qt.AlignCenter)
-        layout.setSpacing(30)
+        layout.setContentsMargins(0, 0, 0, 0)
 
-        title = QLabel("ТЕСТ")
-        title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont(self.custom_font, 42, QFont.Bold))
-        title.setStyleSheet("""
-            color: #ff00ff;
-            text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
-        """)
-        layout.addWidget(title)
+        self.scene = QGraphicsScene()
+        self.view = QGraphicsView(self.scene)
+        self.view.setHorizontalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.view.setVerticalScrollBarPolicy(Qt.ScrollBarAlwaysOff)
+        self.view.setStyleSheet("background: transparent; border: none;")
+        self.view.setRenderHint(QPainter.Antialiasing)
 
-        back_btn = self.create_button("Вернуться")
-        back_btn.clicked.connect(self.show_main_menu)
-        layout.addWidget(back_btn)
-
+        layout.addWidget(self.view)
         self.game_widget.setLayout(layout)
 
     def show_name_screen(self):
@@ -268,6 +267,7 @@ class MainMenu(QMainWindow):
 
     def show_main_menu(self):
         self.clck.play()
+        self.cleanup_game_ui()
         self.name_widget.setVisible(False)
         self.main_menu_widget.setVisible(True)
         self.shop_widget.setVisible(False)
@@ -298,6 +298,183 @@ class MainMenu(QMainWindow):
         self.shop_widget.setVisible(False)
         self.leaderboard_widget.setVisible(False)
         self.game_widget.setVisible(True)
+        self.init_game()
+
+    def update_score_position(self):
+        if hasattr(self, 'score_text'):
+            w = self.scene.width()
+            text_rect = self.score_text.boundingRect()
+            self.score_text.setPos(w - text_rect.width() - 20, 20)
+
+    def init_game(self):
+        self.scene.clear()
+        w, h = self.width(), self.height()
+        self.view.setFixedSize(w, h)
+        self.scene.setSceneRect(0, 0, w, h)
+
+        self.GRAVITY = 0.6
+        self.JUMP_STRENGTH = -8
+        self.PIPE_SPEED = 3
+        self.PIPE_WIDTH = 52
+        self.GAP_HEIGHT = 150
+        self.TOP_MARGIN = 60
+        self.SCORE = 0
+
+        self.bird_radius = 16
+        pen = QPen(QColor("white"), 3)
+        brush = QBrush(QColor("#ff69b4"))
+        self.bird = self.scene.addEllipse(0, 0, self.bird_radius * 2, self.bird_radius * 2, pen=pen, brush=brush)
+        self.bird.setPos(100, h // 2)
+
+        self.bird_velocity = 0
+        self.pipes = []
+
+        font = QFont(self.custom_font, 28, QFont.Bold)
+        self.score_text = self.scene.addText("0", font)
+        self.score_text.setDefaultTextColor(QColor("white"))
+        self.score_text.setZValue(100)
+        self.update_score_position()
+
+        self.back_button_game = self.create_button("Назад", font_size=16, padding=6, width=90, height=35)
+        self.back_button_game.clicked.connect(self.show_main_menu)
+        self.back_button_game.setParent(self.view)
+        self.back_button_game.move(20, 20)
+        self.back_button_game.show()
+
+        self.pipe_timer = QTimer()
+        self.pipe_timer.timeout.connect(self.spawn_pipe)
+        self.pipe_timer.start(1800)
+
+        self.game_timer = QTimer()
+        self.game_timer.timeout.connect(self.update_game)
+        self.game_timer.start(30)
+
+        self.game_widget.setFocus()
+        self.game_widget.setFocusPolicy(Qt.StrongFocus)
+        self.game_widget.setFocus(Qt.OtherFocusReason)
+        self.activateWindow()
+
+    def spawn_pipe(self):
+        h = self.scene.height()
+        if h <= self.TOP_MARGIN + self.GAP_HEIGHT + 80:
+            return
+
+        max_gap_top = int(h - self.TOP_MARGIN - self.GAP_HEIGHT - 80)
+        min_gap_top = self.TOP_MARGIN + 40
+        if max_gap_top <= min_gap_top:
+            gap_top = self.TOP_MARGIN + 60
+        else:
+            gap_top = random.randint(min_gap_top, max_gap_top)
+
+        gap_bottom = gap_top + self.GAP_HEIGHT
+
+        pipe_color = QColor("#ff69b4")
+        pipe_pen = QPen(pipe_color, 2)
+        pipe_brush = QBrush(pipe_color)
+
+        top_pipe = self.scene.addRect(0, 0, self.PIPE_WIDTH, gap_top, pen=pipe_pen, brush=pipe_brush)
+        bottom_pipe = self.scene.addRect(0, gap_bottom, self.PIPE_WIDTH, h - gap_bottom, pen=pipe_pen, brush=pipe_brush)
+
+        top_pipe.setPos(self.scene.width(), 0)
+        bottom_pipe.setPos(self.scene.width(), gap_bottom)
+
+        top_pipe.setData(0, False)
+        self.pipes.append((top_pipe, bottom_pipe))
+
+    def update_game(self):
+        if not self.game_widget.isVisible():
+            return
+
+        self.bird_velocity += self.GRAVITY
+        self.bird.moveBy(0, self.bird_velocity)
+
+        bird_center_x = self.bird.x() + self.bird_radius
+        bird_center_y = self.bird.y() + self.bird_radius
+        scene_h = self.scene.height()
+
+        if bird_center_y - self.bird_radius <= 0 or bird_center_y + self.bird_radius >= scene_h:
+            self.game_over()
+            return
+
+        pipes_to_remove = []
+        for top_pipe, bottom_pipe in self.pipes:
+            top_pipe.moveBy(-self.PIPE_SPEED, 0)
+            bottom_pipe.moveBy(-self.PIPE_SPEED, 0)
+
+            if not top_pipe.data(0) and (top_pipe.x() + self.PIPE_WIDTH < bird_center_x):
+                top_pipe.setData(0, True)
+                self.SCORE += 1
+                self.score_text.setPlainText(str(self.SCORE))
+                self.update_score_position()
+
+            bird_rect = QRectF(bird_center_x - self.bird_radius, bird_center_y - self.bird_radius,
+                               self.bird_radius * 2, self.bird_radius * 2)
+            top_rect = top_pipe.boundingRect().translated(top_pipe.pos())
+            bottom_rect = bottom_pipe.boundingRect().translated(bottom_pipe.pos())
+
+            if bird_rect.intersects(top_rect) or bird_rect.intersects(bottom_rect):
+                self.game_over()
+                return
+
+            if top_pipe.x() + self.PIPE_WIDTH < 0:
+                self.scene.removeItem(top_pipe)
+                self.scene.removeItem(bottom_pipe)
+                pipes_to_remove.append((top_pipe, bottom_pipe))
+
+        for pipe_pair in pipes_to_remove:
+            self.pipes.remove(pipe_pair)
+
+    def game_over(self):
+        self.game_timer.stop()
+        self.pipe_timer.stop()
+        self.show_game_over_screen()
+
+    def show_game_over_screen(self):
+        if hasattr(self, 'game_over_widget') and self.game_over_widget:
+            self.game_over_widget.show()
+            return
+
+        self.game_over_widget = QWidget(self.view)
+        self.game_over_widget.setGeometry(0, 0, self.width(), self.height())
+        self.game_over_widget.setStyleSheet("background-color: rgba(0, 0, 0, 180);")
+
+        layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setSpacing(15)
+
+        label = QLabel(f"Игра окончена!\nСчёт: {self.SCORE}")
+        label.setFont(QFont(self.custom_font, 32, QFont.Bold))
+        label.setStyleSheet("color: white;")
+        label.setAlignment(Qt.AlignCenter)
+        layout.addWidget(label)
+
+        retry_btn = self.create_button("Повторить", font_size=24)
+        retry_btn.clicked.connect(self.restart_game)
+        layout.addWidget(retry_btn)
+
+        back_btn = self.create_button("Меню", font_size=24)
+        back_btn.clicked.connect(self.show_main_menu)
+        layout.addWidget(back_btn)
+
+        self.game_over_widget.setLayout(layout)
+        self.game_over_widget.show()
+
+        if hasattr(self, 'back_button_game'):
+            self.back_button_game.hide()
+
+    def restart_game(self):
+        if hasattr(self, 'game_over_widget') and self.game_over_widget:
+            self.game_over_widget.hide()
+        self.show_game()
+
+    def cleanup_game_ui(self):
+        if hasattr(self, 'back_button_game'):
+            self.back_button_game.hide()
+        if hasattr(self, 'game_over_widget') and self.game_over_widget:
+            self.game_over_widget.hide()
+
+    def start_game(self):
+        self.show_game()
 
     def on_continue_name(self):
         name = self.name_input.text().strip()
@@ -319,9 +496,6 @@ class MainMenu(QMainWindow):
         self.current_skin_index = (self.current_skin_index + 1) % len(self.skins)
         self.update_skin_display()
 
-    def start_game(self):
-        self.show_game()
-
     def on_exit_click(self):
         self.clck.play()
         QApplication.quit()
@@ -337,6 +511,16 @@ class MainMenu(QMainWindow):
     def resizeEvent(self, event):
         self.set_back()
         super().resizeEvent(event)
+
+    def keyPressEvent(self, event):
+        if self.game_widget.isVisible():
+            if event.key() == Qt.Key_Space:
+                self.bird_velocity = self.JUMP_STRENGTH
+                self.clck.play()
+            elif event.key() == Qt.Key_Escape:
+                self.show_main_menu()
+        else:
+            super().keyPressEvent(event)
 
 
 if __name__ == "__main__":
