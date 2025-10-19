@@ -1,6 +1,6 @@
 import sys
 
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDesktopWidget
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDesktopWidget, QLineEdit
 from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor, QLinearGradient, QBrush
 from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
@@ -9,6 +9,7 @@ from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 class MainMenu(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.player_name = None
         self.click_sound = None
         self.current_skin_index = 0
         self.coins = 50
@@ -46,15 +47,17 @@ class MainMenu(QMainWindow):
         self.main_layout.setSpacing(30)
         central_widget.setLayout(self.main_layout)
 
+        self.create_name_screen()
         self.create_main_menu()
         self.create_shop_screen()
         self.create_leaderboard_screen()
 
+        self.main_layout.addWidget(self.name_widget)
         self.main_layout.addWidget(self.main_menu_widget)
         self.main_layout.addWidget(self.shop_widget)
         self.main_layout.addWidget(self.leaderboard_widget)
 
-        self.show_main_menu()
+        self.show_name_screen()
         self.set_back()
 
     def create_button(self, text, font_size=24, padding=15, width=None, height=None):
@@ -79,6 +82,41 @@ class MainMenu(QMainWindow):
         if width and height:
             button.setFixedSize(width, height)
         return button
+
+    def create_name_screen(self):
+        self.name_widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setSpacing(30)
+
+        title = QLabel("ВВЕДИТЕ ИМЯ")
+        title.setAlignment(Qt.AlignCenter)
+        title.setFont(QFont(self.custom_font, 48, QFont.Bold))
+        title.setStyleSheet("""
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+        """)
+        layout.addWidget(title)
+
+        self.name_input = QLineEdit()
+        self.name_input.setPlaceholderText("Ваше имя")
+        self.name_input.setAlignment(Qt.AlignCenter)
+        self.name_input.setFont(QFont(self.custom_font, 24))
+        self.name_input.setStyleSheet("""
+            padding: 15px;
+            border: 2px solid #ff69b4;
+            border-radius: 15px;
+            background-color: rgba(255, 255, 255, 0.2);
+            color: white;
+        """)
+        self.name_input.setMaxLength(15)
+        layout.addWidget(self.name_input)
+
+        continue_btn = self.create_button("Продолжить")
+        continue_btn.clicked.connect(self.on_continue_name)
+        layout.addWidget(continue_btn)
+
+        self.name_widget.setLayout(layout)
 
     def create_main_menu(self):
         self.main_menu_widget = QWidget()
@@ -198,14 +236,22 @@ class MainMenu(QMainWindow):
 
         self.leaderboard_widget.setLayout(layout)
 
+    def show_name_screen(self):
+        self.name_widget.setVisible(True)
+        self.main_menu_widget.setVisible(False)
+        self.shop_widget.setVisible(False)
+        self.leaderboard_widget.setVisible(False)
+
     def show_main_menu(self):
         self.clck.play()
+        self.name_widget.setVisible(False)
         self.main_menu_widget.setVisible(True)
         self.shop_widget.setVisible(False)
         self.leaderboard_widget.setVisible(False)
 
     def show_shop(self):
         self.clck.play()
+        self.name_widget.setVisible(False)
         self.main_menu_widget.setVisible(False)
         self.shop_widget.setVisible(True)
         self.leaderboard_widget.setVisible(False)
@@ -213,9 +259,16 @@ class MainMenu(QMainWindow):
 
     def show_leaderboard(self):
         self.clck.play()
+        self.name_widget.setVisible(False)
         self.main_menu_widget.setVisible(False)
         self.shop_widget.setVisible(False)
         self.leaderboard_widget.setVisible(True)
+
+    def on_continue_name(self):
+        name = self.name_input.text().strip()
+        if name:
+            self.player_name = name
+            self.show_main_menu()
 
     def update_skin_display(self):
         current_skin_name = self.skins[self.current_skin_index]
