@@ -1,5 +1,6 @@
 import sys
 import random
+import os
 
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDesktopWidget, QLineEdit, QGraphicsView, QGraphicsScene, QGraphicsTextItem
 from PyQt5.QtCore import Qt, QUrl, QTimer, QRectF
@@ -12,10 +13,11 @@ class MainMenu(QMainWindow):
         super().__init__()
         self.player_name = None
         self.current_skin_index = 0
-        self.coins = 50
+        self.coins = self.load_coins()
         self.skins = ["Скин 1", "Скин 2", "Скин 3"]
         self.bg_music = None
         self.clck = None
+        self.leaderboard_records = self.load_leaderboard()
         self.init_ui()
 
     def init_ui(self):
@@ -172,6 +174,7 @@ class MainMenu(QMainWindow):
         back_btn.clicked.connect(self.show_main_menu)
 
         coins_label = QLabel(f"Монеты: {self.coins}")
+        coins_label.setObjectName("coins_label")
         coins_label.setFont(QFont(self.custom_font, 18))
         coins_label.setStyleSheet("color: yellow; font-weight: bold;")
 
@@ -229,20 +232,19 @@ class MainMenu(QMainWindow):
         """)
         layout.addWidget(title)
 
-        scores = [
-            "Александр — 42",
-            "Вика — 665",
-            "Олег — 21",
-            "Сосунок — 3",
-            "с? — 41"
-        ]
-
-        for score in scores:
-            label = QLabel(score)
-            label.setAlignment(Qt.AlignCenter)
-            label.setFont(QFont(self.custom_font, 20))
-            label.setStyleSheet("color: white; background-color: rgba(255, 105, 180, 0.2); padding: 10px; border-radius: 10px;")
-            layout.addWidget(label)
+        if not self.leaderboard_records:
+            no_records = QLabel("Нет рекордов")
+            no_records.setAlignment(Qt.AlignCenter)
+            no_records.setFont(QFont(self.custom_font, 20))
+            no_records.setStyleSheet("color: white;")
+            layout.addWidget(no_records)
+        else:
+            for name, score in self.leaderboard_records:
+                label = QLabel(f"{name} — {score}")
+                label.setAlignment(Qt.AlignCenter)
+                label.setFont(QFont(self.custom_font, 20))
+                label.setStyleSheet("color: white; background-color: rgba(255, 105, 180, 0.2); padding: 10px; border-radius: 10px;")
+                layout.addWidget(label)
 
         back_btn = self.create_button("Назад")
         back_btn.clicked.connect(self.show_main_menu)
@@ -290,6 +292,9 @@ class MainMenu(QMainWindow):
         self.leaderboard_widget.setVisible(False)
         self.game_widget.setVisible(False)
         self.update_skin_display()
+        coins_label = self.shop_widget.findChild(QLabel, "coins_label")
+        if coins_label:
+            coins_label.setText(f"Монеты: {self.coins}")
 
     def show_leaderboard(self):
         self.clck.play()
@@ -351,7 +356,7 @@ class MainMenu(QMainWindow):
 
         self.pipe_timer = QTimer()
         self.pipe_timer.timeout.connect(self.spawn_pipe)
-        self.pipe_timer.start(2200)
+        self.pipe_timer.start(2800)
 
         self.game_timer = QTimer()
         self.game_timer.timeout.connect(self.update_game)
@@ -437,6 +442,23 @@ class MainMenu(QMainWindow):
             self.pipes.remove(pipe_pair)
 
     def game_over(self):
+        if self.SCORE > 0:
+            earned_coins = self.SCORE // 5
+            self.coins += earned_coins
+            self.save_coins()
+
+            if self.player_name:
+                self.leaderboard_records = self.load_leaderboard()
+                new_record = (self.player_name, self.SCORE)
+
+                exists = any(name == self.player_name and score == self.SCORE for name, score in self.leaderboard_records)
+
+                if not exists:
+                    self.leaderboard_records.append(new_record)
+                    self.leaderboard_records.sort(key=lambda x: x[1], reverse=True)
+                    self.leaderboard_records = self.leaderboard_records[:5]
+                    self.save_leaderboard(self.leaderboard_records)
+
         self.game_timer.stop()
         self.pipe_timer.stop()
         self.show_game_over_screen()
@@ -536,6 +558,39 @@ class MainMenu(QMainWindow):
                 self.show_main_menu()
         else:
             super().keyPressEvent(event)
+
+    def load_leaderboard(self):
+        records = []
+        if os.path.exists("leaderboard.txt"):
+            with open("leaderboard.txt", "r", encoding="utf-8") as f:
+                for line in f:
+                    line = line.strip()
+                    if line:
+                        try:
+                            name, score = line.rsplit(" — ", 1)
+                            records.append((name, int(score)))
+                        except ValueError:
+                            continue
+        records.sort(key=lambda x: x[1], reverse=True)
+        return records[:5]
+
+    def save_leaderboard(self, records):
+        with open("leaderboard.txt", "w", encoding="utf-8") as f:
+            for name, score in records:
+                f.write(f"{name} — {score}\n")
+
+    def load_coins(self):
+        if os.path.exists("coins.txt"):
+            try:
+                with open("coins.txt", "r") as f:
+                    return int(f.read().strip())
+            except ValueError:
+                return 0
+        return 0
+
+    def save_coins(self):
+        with open("coins.txt", "w") as f:
+            f.write(str(self.coins))
 
 
 if __name__ == "__main__":
