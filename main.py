@@ -232,25 +232,41 @@ class MainMenu(QMainWindow):
         """)
         layout.addWidget(title)
 
-        if not self.leaderboard_records:
-            no_records = QLabel("Нет рекордов")
-            no_records.setAlignment(Qt.AlignCenter)
-            no_records.setFont(QFont(self.custom_font, 20))
-            no_records.setStyleSheet("color: white;")
-            layout.addWidget(no_records)
-        else:
-            for name, score in self.leaderboard_records:
-                label = QLabel(f"{name} — {score}")
-                label.setAlignment(Qt.AlignCenter)
-                label.setFont(QFont(self.custom_font, 20))
-                label.setStyleSheet("color: white; background-color: rgba(255, 105, 180, 0.2); padding: 10px; border-radius: 10px;")
-                layout.addWidget(label)
+        self.leaderboard_content = QWidget()
+        self.leaderboard_content_layout = QVBoxLayout()
+        self.leaderboard_content_layout.setAlignment(Qt.AlignCenter)
+        self.leaderboard_content.setLayout(self.leaderboard_content_layout)
+        layout.addWidget(self.leaderboard_content)
 
         back_btn = self.create_button("Назад")
         back_btn.clicked.connect(self.show_main_menu)
         layout.addWidget(back_btn)
 
         self.leaderboard_widget.setLayout(layout)
+        self.update_leaderboard_display()
+
+    def update_leaderboard_display(self):
+        # Очистка старых записей
+        while self.leaderboard_content_layout.count():
+            child = self.leaderboard_content_layout.takeAt(0)
+            if child.widget():
+                child.widget().deleteLater()
+
+        self.leaderboard_records = self.load_leaderboard()
+
+        if not self.leaderboard_records:
+            no_records = QLabel("Нет рекордов")
+            no_records.setAlignment(Qt.AlignCenter)
+            no_records.setFont(QFont(self.custom_font, 20))
+            no_records.setStyleSheet("color: white;")
+            self.leaderboard_content_layout.addWidget(no_records)
+        else:
+            for name, score in self.leaderboard_records:
+                label = QLabel(f"{name} — {score}")
+                label.setAlignment(Qt.AlignCenter)
+                label.setFont(QFont(self.custom_font, 20))
+                label.setStyleSheet("color: white; background-color: rgba(255, 105, 180, 0.2); padding: 10px; border-radius: 10px;")
+                self.leaderboard_content_layout.addWidget(label)
 
     def create_game_screen(self):
         self.game_widget = QWidget()
@@ -283,6 +299,7 @@ class MainMenu(QMainWindow):
         self.shop_widget.setVisible(False)
         self.leaderboard_widget.setVisible(False)
         self.game_widget.setVisible(False)
+        self.update_leaderboard_display()
 
     def show_shop(self):
         self.clck.play()
@@ -326,7 +343,7 @@ class MainMenu(QMainWindow):
         self.scene.setSceneRect(0, 0, w, h)
 
         self.GRAVITY = 0.6
-        self.JUMP_STRENGTH = -8
+        self.JUMP_STRENGTH = -7
         self.PIPE_SPEED = 3
         self.PIPE_WIDTH = 52
         self.GAP_HEIGHT = 20
@@ -375,15 +392,19 @@ class MainMenu(QMainWindow):
         if h <= self.TOP_MARGIN + self.GAP_HEIGHT:
             return
 
+        MIN_GAP_HEIGHT = self.bird_radius * 3
+
+        actual_gap_height = max(self.GAP_HEIGHT, MIN_GAP_HEIGHT)
+
         min_gap_top = self.TOP_MARGIN + 40
-        max_gap_top = int(h - self.GAP_HEIGHT - 20)
+        max_gap_top = int(h - actual_gap_height - 20)
 
         if max_gap_top <= min_gap_top:
             gap_top = min_gap_top
         else:
             gap_top = random.randint(min_gap_top, max_gap_top)
 
-        gap_bottom = gap_top + self.GAP_HEIGHT
+        gap_bottom = gap_top + actual_gap_height
 
         pipe_color = QColor("#ff69b4")
         pipe_pen = QPen(pipe_color, 2)
@@ -580,16 +601,16 @@ class MainMenu(QMainWindow):
                 f.write(f"{name} — {score}\n")
 
     def load_coins(self):
-        if os.path.exists("coins.txt"):
+        if os.path.exists("user.txt"):
             try:
-                with open("coins.txt", "r") as f:
+                with open("user.txt", "r") as f:
                     return int(f.read().strip())
             except ValueError:
                 return 0
         return 0
 
     def save_coins(self):
-        with open("coins.txt", "w") as f:
+        with open("user.txt", "w") as f:
             f.write(str(self.coins))
 
 
