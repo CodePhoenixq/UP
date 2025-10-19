@@ -51,11 +51,13 @@ class MainMenu(QMainWindow):
         self.create_main_menu()
         self.create_shop_screen()
         self.create_leaderboard_screen()
+        self.create_game_screen()
 
         self.main_layout.addWidget(self.name_widget)
         self.main_layout.addWidget(self.main_menu_widget)
         self.main_layout.addWidget(self.shop_widget)
         self.main_layout.addWidget(self.leaderboard_widget)
+        self.main_layout.addWidget(self.game_widget)
 
         self.show_name_screen()
         self.set_back()
@@ -236,11 +238,33 @@ class MainMenu(QMainWindow):
 
         self.leaderboard_widget.setLayout(layout)
 
+    def create_game_screen(self):
+        self.game_widget = QWidget()
+        layout = QVBoxLayout()
+        layout.setAlignment(Qt.AlignCenter)
+        layout.setSpacing(30)
+
+        title = QLabel("ТЕСТ")
+        title.setAlignment(Qt.AlignCenter)
+        title.setFont(QFont(self.custom_font, 42, QFont.Bold))
+        title.setStyleSheet("""
+            color: #ff00ff;
+            text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
+        """)
+        layout.addWidget(title)
+
+        back_btn = self.create_button("Вернуться")
+        back_btn.clicked.connect(self.show_main_menu)
+        layout.addWidget(back_btn)
+
+        self.game_widget.setLayout(layout)
+
     def show_name_screen(self):
         self.name_widget.setVisible(True)
         self.main_menu_widget.setVisible(False)
         self.shop_widget.setVisible(False)
         self.leaderboard_widget.setVisible(False)
+        self.game_widget.setVisible(False)
 
     def show_main_menu(self):
         self.clck.play()
@@ -248,6 +272,7 @@ class MainMenu(QMainWindow):
         self.main_menu_widget.setVisible(True)
         self.shop_widget.setVisible(False)
         self.leaderboard_widget.setVisible(False)
+        self.game_widget.setVisible(False)
 
     def show_shop(self):
         self.clck.play()
@@ -255,6 +280,7 @@ class MainMenu(QMainWindow):
         self.main_menu_widget.setVisible(False)
         self.shop_widget.setVisible(True)
         self.leaderboard_widget.setVisible(False)
+        self.game_widget.setVisible(False)
         self.update_skin_display()
 
     def show_leaderboard(self):
@@ -263,6 +289,15 @@ class MainMenu(QMainWindow):
         self.main_menu_widget.setVisible(False)
         self.shop_widget.setVisible(False)
         self.leaderboard_widget.setVisible(True)
+        self.game_widget.setVisible(False)
+
+    def show_game(self):
+        self.clck.play()
+        self.name_widget.setVisible(False)
+        self.main_menu_widget.setVisible(False)
+        self.shop_widget.setVisible(False)
+        self.leaderboard_widget.setVisible(False)
+        self.game_widget.setVisible(True)
 
     def on_continue_name(self):
         name = self.name_input.text().strip()
@@ -285,7 +320,7 @@ class MainMenu(QMainWindow):
         self.update_skin_display()
 
     def start_game(self):
-        print("Запуск игры...")
+        self.show_game()
 
     def on_exit_click(self):
         self.clck.play()
