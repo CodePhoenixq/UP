@@ -1,12 +1,15 @@
 import sys
-from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout,QPushButton, QLabel, QDesktopWidget
-from PyQt5.QtCore import Qt
+
+from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QPushButton, QLabel, QDesktopWidget
+from PyQt5.QtCore import Qt, QUrl
 from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor, QLinearGradient, QBrush
+from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
 
 
 class MainMenu(QMainWindow):
     def __init__(self):
         super().__init__()
+        self.click_sound = None
         self.init_ui()
 
     def init_ui(self):
@@ -26,8 +29,12 @@ class MainMenu(QMainWindow):
 
         font_path = "mat/f/Comfortaa.ttf"
         font_id = QFontDatabase.addApplicationFont(font_path)
-        font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
-        self.custom_font = font_family
+        self.custom_font = QFontDatabase.applicationFontFamilies(font_id)[0]
+
+
+        self.clck = QMediaPlayer()
+        self.clck.setMedia(QMediaContent(QUrl.fromLocalFile("mat/s/hump.mp3")))
+        self.clck.setVolume(50)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -41,7 +48,6 @@ class MainMenu(QMainWindow):
         title.setFont(QFont(self.custom_font, 48, QFont.Bold))
         title.setStyleSheet("""
             color: #ff00ff;
-            font-weight: bold;
             text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
         """)
         layout.addWidget(title)
@@ -72,13 +78,28 @@ class MainMenu(QMainWindow):
             btn.setStyleSheet(button_style)
             layout.addWidget(btn)
 
-        play_btn.clicked.connect(self.start_game)
-        shop_btn.clicked.connect(self.open_shop)
-        leaderboard_btn.clicked.connect(self.show_leaderboard)
-        exit_btn.clicked.connect(QApplication.quit)
+        play_btn.clicked.connect(self.on_button_click)
+        shop_btn.clicked.connect(self.on_button_click)
+        leaderboard_btn.clicked.connect(self.on_button_click)
+        exit_btn.clicked.connect(self.on_exit_click)
 
         central_widget.setLayout(layout)
         self.set_back()
+
+    def on_button_click(self):
+        self.clck.play()
+        sender = self.sender()
+        if sender.text() == "Играть":
+            self.start_game()
+        elif sender.text() == "Магазин":
+            self.open_shop()
+        elif sender.text() == "Таблица рекордов":
+            self.show_leaderboard()
+
+    def on_exit_click(self):
+        if self.click_sound:
+            self.click_sound.play()
+        QApplication.quit()
 
     def set_back(self):
         palette = QPalette()
@@ -101,7 +122,6 @@ class MainMenu(QMainWindow):
     def show_leaderboard(self):
         print("Показ таблицы рекордов...")
 
-    #переделать логику кнопок
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
