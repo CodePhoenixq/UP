@@ -1,7 +1,7 @@
 import sys
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout,QPushButton, QLabel, QDesktopWidget
 from PyQt5.QtCore import Qt
-from PyQt5.QtGui import QFont, QPalette, QColor, QLinearGradient, QBrush
+from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor, QLinearGradient, QBrush
 
 
 class MainMenu(QMainWindow):
@@ -16,15 +16,18 @@ class MainMenu(QMainWindow):
 
         window_width = int(screen_width * 0.6)
         window_height = int(screen_height * 0.7)
-
         self.setFixedSize(window_width, window_height)
 
         self.move(
             (screen_width - window_width) // 2,
             (screen_height - window_height) // 2
         )
-
         self.setWindowTitle("Flappy Bird")
+
+        font_path = "mat/f/Comfortaa.ttf"
+        font_id = QFontDatabase.addApplicationFont(font_path)
+        font_family = QFontDatabase.applicationFontFamilies(font_id)[0]
+        self.custom_font = font_family
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -35,30 +38,29 @@ class MainMenu(QMainWindow):
 
         title = QLabel("FLAPPY BIRD")
         title.setAlignment(Qt.AlignCenter)
-        title.setFont(QFont("Orbitron", 48, QFont.Bold))
+        title.setFont(QFont(self.custom_font, 48, QFont.Bold))
         title.setStyleSheet("""
             color: #ff00ff;
+            font-weight: bold;
             text-shadow: 0 0 10px #ff00ff, 0 0 20px #ff00ff;
         """)
         layout.addWidget(title)
 
-
-        #хз, сократить может
-        button_style = """
-            QPushButton {
+        button_style = f"""
+            QPushButton {{
                 background-color: rgba(255, 105, 180, 0.3);
                 color: white;
                 border: 2px solid #ff69b4;
                 border-radius: 15px;
                 padding: 15px;
                 font-size: 24px;
-                font-family: 'Orbitron';
+                font-family: "{self.custom_font}";
                 text-shadow: 0 0 8px #ff69b4;
-            }
-            QPushButton:hover {
+            }}
+            QPushButton:hover {{
                 background-color: rgba(255, 105, 180, 0.6);
                 border: 2px solid #ff1493;
-            }
+            }}
         """
 
         play_btn = QPushButton("Играть")
@@ -70,14 +72,12 @@ class MainMenu(QMainWindow):
             btn.setStyleSheet(button_style)
             layout.addWidget(btn)
 
-        # заглушки
         play_btn.clicked.connect(self.start_game)
         shop_btn.clicked.connect(self.open_shop)
         leaderboard_btn.clicked.connect(self.show_leaderboard)
         exit_btn.clicked.connect(QApplication.quit)
 
         central_widget.setLayout(layout)
-
         self.set_back()
 
     def set_back(self):
@@ -88,6 +88,10 @@ class MainMenu(QMainWindow):
         palette.setBrush(QPalette.Window, QBrush(gradient))
         self.setPalette(palette)
 
+    def resizeEvent(self, event):
+        self.set_back()
+        super().resizeEvent(event)
+
     def start_game(self):
         print("Запуск игры...")
 
@@ -97,11 +101,7 @@ class MainMenu(QMainWindow):
     def show_leaderboard(self):
         print("Показ таблицы рекордов...")
 
-    def resizeEvent(self, event):
-        self.set_back()
-        super().resizeEvent(event)
-
-
+    #переделать логику кнопок
 if __name__ == "__main__":
     app = QApplication(sys.argv)
 
