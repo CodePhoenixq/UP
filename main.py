@@ -4,17 +4,18 @@ import random
 from PyQt5.QtWidgets import QApplication, QMainWindow, QWidget, QVBoxLayout, QHBoxLayout, QPushButton, QLabel, QDesktopWidget, QLineEdit, QGraphicsView, QGraphicsScene, QGraphicsTextItem
 from PyQt5.QtCore import Qt, QUrl, QTimer, QRectF
 from PyQt5.QtGui import QFont, QFontDatabase, QPalette, QColor, QLinearGradient, QBrush, QPainter, QPen
-from PyQt5.QtMultimedia import QMediaPlayer, QMediaContent
+from PyQt5.QtMultimedia import QMediaContent, QMediaPlayer
 
 
 class MainMenu(QMainWindow):
     def __init__(self):
         super().__init__()
         self.player_name = None
-        self.click_sound = None
         self.current_skin_index = 0
         self.coins = 50
         self.skins = ["Скин 1", "Скин 2", "Скин 3"]
+        self.bg_music = None
+        self.clck = None
         self.init_ui()
 
     def init_ui(self):
@@ -34,14 +35,16 @@ class MainMenu(QMainWindow):
 
         font_path = "mat/f/Comfortaa.ttf"
         font_id = QFontDatabase.addApplicationFont(font_path)
-        if font_id == -1:
-            self.custom_font = "Arial"
-        else:
-            self.custom_font = QFontDatabase.applicationFontFamilies(font_id)[0]
+        self.custom_font = QFontDatabase.applicationFontFamilies(font_id)[0]
 
         self.clck = QMediaPlayer()
         self.clck.setMedia(QMediaContent(QUrl.fromLocalFile("mat/s/hump.mp3")))
         self.clck.setVolume(50)
+
+        self.bg_music = QMediaPlayer()
+        self.bg_music.setMedia(QMediaContent(QUrl.fromLocalFile("mat/mus/muslo.mp3")))
+        self.bg_music.setVolume(20)
+        self.bg_music.mediaStatusChanged.connect(self.on_media_status_changed)
 
         central_widget = QWidget()
         self.setCentralWidget(central_widget)
@@ -65,6 +68,11 @@ class MainMenu(QMainWindow):
 
         self.show_name_screen()
         self.set_back()
+
+    def on_media_status_changed(self, status):
+        if status == QMediaPlayer.EndOfMedia:
+            self.bg_music.setPosition(0)
+            self.bg_music.play()
 
     def create_button(self, text, font_size=24, padding=15, width=None, height=None):
         button = QPushButton(text)
@@ -316,7 +324,7 @@ class MainMenu(QMainWindow):
         self.JUMP_STRENGTH = -8
         self.PIPE_SPEED = 3
         self.PIPE_WIDTH = 52
-        self.GAP_HEIGHT = 150
+        self.GAP_HEIGHT = 20
         self.TOP_MARGIN = 60
         self.SCORE = 0
 
@@ -343,7 +351,7 @@ class MainMenu(QMainWindow):
 
         self.pipe_timer = QTimer()
         self.pipe_timer.timeout.connect(self.spawn_pipe)
-        self.pipe_timer.start(1800)
+        self.pipe_timer.start(2200)
 
         self.game_timer = QTimer()
         self.game_timer.timeout.connect(self.update_game)
@@ -354,15 +362,19 @@ class MainMenu(QMainWindow):
         self.game_widget.setFocus(Qt.OtherFocusReason)
         self.activateWindow()
 
+        if self.bg_music:
+            self.bg_music.play()
+
     def spawn_pipe(self):
         h = self.scene.height()
-        if h <= self.TOP_MARGIN + self.GAP_HEIGHT + 80:
+        if h <= self.TOP_MARGIN + self.GAP_HEIGHT:
             return
 
-        max_gap_top = int(h - self.TOP_MARGIN - self.GAP_HEIGHT - 80)
         min_gap_top = self.TOP_MARGIN + 40
+        max_gap_top = int(h - self.GAP_HEIGHT - 20)
+
         if max_gap_top <= min_gap_top:
-            gap_top = self.TOP_MARGIN + 60
+            gap_top = min_gap_top
         else:
             gap_top = random.randint(min_gap_top, max_gap_top)
 
@@ -468,6 +480,9 @@ class MainMenu(QMainWindow):
         self.show_game()
 
     def cleanup_game_ui(self):
+        if self.bg_music:
+            self.bg_music.pause()
+            self.bg_music.setPosition(0)
         if hasattr(self, 'back_button_game'):
             self.back_button_game.hide()
         if hasattr(self, 'game_over_widget') and self.game_over_widget:
